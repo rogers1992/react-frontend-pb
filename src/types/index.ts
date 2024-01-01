@@ -198,6 +198,7 @@ export interface Product {
   unit_price: number;
   wholesale_price: number | null;
   cost_price: number | null;
+  wholesale_cost_price: number | null;
   effective_cost: number | null;
   weight?: number;
   image_url?: string;
@@ -207,6 +208,7 @@ export interface Product {
   created_at: string;
   updated_at: string;
   current_cost: number | null;
+  current_wholesale_cost?: number | null;
   images?: ProductImage[];
 }
 
@@ -222,6 +224,7 @@ export interface ProductCreate {
   unit_price: number;
   wholesale_price?: number | null;
   cost_price?: number | null;
+  wholesale_cost_price?: number | null;
   weight?: number;
   category_id: number;
   supplier_id?: number | null;
@@ -240,6 +243,7 @@ export interface ProductUpdate {
   unit_price: number;
   wholesale_price?: number | null;
   cost_price?: number | null;
+  wholesale_cost_price?: number | null;
   weight?: number;
   image_url?: string | null;
   category_id?: number;
@@ -402,18 +406,21 @@ export interface Warehouse {
   name: string;
   location: string | null;
   is_active: boolean;
+  is_wholesale?: boolean;
   created_at: string;
 }
 
 export interface WarehouseCreate {
   name: string;
   location?: string;
+  is_wholesale?: boolean;
 }
 
 export interface WarehouseUpdate {
   name?: string;
   location?: string;
   is_active?: boolean;
+  is_wholesale?: boolean;
 }
 
 // =========================
@@ -472,6 +479,7 @@ export interface SaleItem {
   unit_price: number;
   discount: number;
   total_price: number;
+  is_wholesale?: boolean;
 }
 
 /**
@@ -483,6 +491,7 @@ export interface SaleItemCreate {
   quantity: number;
   unit_price: number;
   discount?: number;
+  is_wholesale?: boolean;
 }
 
 /**

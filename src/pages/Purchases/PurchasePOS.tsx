@@ -68,7 +68,6 @@ export default function PurchasePOS() {
   useEffect(() => {
     if (prevWarehouseIdRef.current !== null && prevWarehouseIdRef.current !== selectedWarehouse?.id) {
       setCart([]);
-      setSelectedSupplier(null);
       setExpectedDate("");
       setShowValidation(false);
     }
@@ -87,7 +86,20 @@ export default function PurchasePOS() {
 
   const inCartIds = useMemo(() => new Set(cart.map((i) => i.product.id)), [cart]);
 
+  const canAddProducts = !!selectedWarehouse && !!selectedSupplier;
+
+  const getDefaultCost = useCallback((product: Product): number => {
+    if (selectedWarehouse?.is_wholesale) {
+      return product.current_wholesale_cost ?? product.wholesale_cost_price ?? 0;
+    }
+    return product.current_cost ?? product.cost_price ?? 0;
+  }, [selectedWarehouse]);
+
   const addToCart = useCallback((product: Product) => {
+    if (!selectedWarehouse || !selectedSupplier) {
+      showToast({ type: "error", message: "Selecciona almacén y proveedor primero." });
+      return;
+    }
     setCart((prev) => {
       const existing = prev.find((i) => i.product.id === product.id);
       if (existing) {
@@ -95,10 +107,9 @@ export default function PurchasePOS() {
           i.product.id === product.id ? { ...i, quantity: i.quantity + 1 } : i,
         );
       }
-      const defaultCost = product.current_cost ?? 0;
-      return [...prev, { product, quantity: 1, unit_cost: defaultCost }];
+      return [...prev, { product, quantity: 1, unit_cost: getDefaultCost(product) }];
     });
-  }, []);
+  }, [getDefaultCost, selectedWarehouse, selectedSupplier, showToast]);
 
   const updateCartItem = useCallback(
     (productId: number, quantity: number, unitCost: number) => {
@@ -203,6 +214,8 @@ export default function PurchasePOS() {
             onCategoryChange={setSelectedCategory}
             onAddToCart={addToCart}
             inCartIds={inCartIds}
+            selectedWarehouse={selectedWarehouse}
+            canAddProducts={canAddProducts}
           />
         </div>
         <div className="xl:col-span-1">

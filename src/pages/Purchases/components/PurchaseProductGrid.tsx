@@ -2,7 +2,7 @@ import { useMemo } from "react";
 import SearchInput from "../../../components/common/SearchInput";
 import { resolveImageUrl } from "../../../services/api";
 import { PlusIcon } from "../../../icons";
-import type { Product, Category } from "../../../types";
+import type { Product, Category, Warehouse } from "../../../types";
 
 interface PurchaseProductGridProps {
   products: Product[];
@@ -13,6 +13,8 @@ interface PurchaseProductGridProps {
   onCategoryChange: (cat: number | "all") => void;
   onAddToCart: (product: Product) => void;
   inCartIds: Set<number>;
+  selectedWarehouse: Warehouse | null;
+  canAddProducts: boolean;
 }
 
 export default function PurchaseProductGrid({
@@ -24,6 +26,8 @@ export default function PurchaseProductGrid({
   onCategoryChange,
   onAddToCart,
   inCartIds,
+  selectedWarehouse,
+  canAddProducts,
 }: PurchaseProductGridProps) {
   const filtered = useMemo(() => {
     return products.filter((p) => {
@@ -34,12 +38,24 @@ export default function PurchaseProductGrid({
         p.barcode?.toLowerCase().includes(searchQuery.toLowerCase());
       const matchesCategory =
         selectedCategory === "all" || p.category_id === selectedCategory;
-      return matchesSearch && matchesCategory;
+
+      // When wholesale warehouse selected, only show products with wholesale cost
+      const matchesWholesale =
+        !selectedWarehouse?.is_wholesale ||
+        p.wholesale_cost_price != null ||
+        p.current_wholesale_cost != null;
+
+      return matchesSearch && matchesCategory && matchesWholesale;
     });
-  }, [products, searchQuery, selectedCategory]);
+  }, [products, searchQuery, selectedCategory, selectedWarehouse]);
 
   return (
     <div className="space-y-4">
+      {!canAddProducts && (
+        <div className="rounded-lg bg-amber-50 border border-amber-200 px-4 py-3 text-sm text-amber-700 dark:bg-amber-500/10 dark:border-amber-500/30 dark:text-amber-400">
+          Selecciona almacén y proveedor para agregar productos.
+        </div>
+      )}
       <SearchInput
         value={searchQuery}
         onChange={onSearchChange}
@@ -87,17 +103,26 @@ export default function PurchaseProductGrid({
               d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4"
             />
           </svg>
-          <p className="text-sm">No se encontraron productos.</p>
+          <p className="text-sm">
+            {selectedWarehouse?.is_wholesale
+              ? "No hay productos con costo mayorista configurado"
+              : "No se encontraron productos."}
+          </p>
         </div>
       ) : (
         <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
           {filtered.map((product) => {
             const url = resolveImageUrl(product.image_url);
+            const rawPrice = selectedWarehouse?.is_wholesale
+              ? product.wholesale_price
+              : product.unit_price;
             const price =
-              typeof product.unit_price === "string"
-                ? parseFloat(product.unit_price)
-                : product.unit_price;
+              typeof rawPrice === "string" ? parseFloat(rawPrice) : (rawPrice ?? 0);
             const alreadyInCart = inCartIds.has(product.id);
+
+            const relevantCost = selectedWarehouse?.is_wholesale
+              ? (product.current_wholesale_cost ?? product.wholesale_cost_price)
+              : (product.current_cost ?? product.cost_price);
 
             return (
               <div
@@ -118,15 +143,23 @@ export default function PurchaseProductGrid({
                     {product.name}
                   </p>
                   <p className="text-gray-400 dark:text-gray-500 text-xs">
-                    Precio venta: ${price.toFixed(2)}
+                    Precio venta: Bs{price.toFixed(2)}
                   </p>
+                  {relevantCost != null && (
+                    <p className="text-gray-500 dark:text-gray-400 text-xs">
+                      {selectedWarehouse?.is_wholesale ? "Costo mayor" : "Costo"}: Bs{relevantCost.toFixed(2)}
+                    </p>
+                  )}
                   <div className="flex items-center justify-end gap-2">
                     <button
                       onClick={() => onAddToCart(product)}
+                      disabled={!canAddProducts || alreadyInCart}
                       className={`flex items-center justify-center gap-1 rounded-lg px-3 py-1.5 text-xs font-medium transition ${
                         alreadyInCart
                           ? "bg-success-50 text-success-600 dark:bg-success-500/15 dark:text-success-500"
-                          : "bg-brand-500 text-white hover:bg-brand-600"
+                          : canAddProducts
+                            ? "bg-brand-500 text-white hover:bg-brand-600"
+                            : "bg-gray-200 text-gray-400 cursor-not-allowed dark:bg-gray-700 dark:text-gray-500"
                       }`}
                     >
                       <PlusIcon className="size-3.5" />

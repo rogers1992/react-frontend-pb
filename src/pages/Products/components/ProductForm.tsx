@@ -62,6 +62,7 @@ export default function ProductForm({
   const [unitPrice, setUnitPrice] = useState("");
   const [wholesalePrice, setWholesalePrice] = useState("");
   const [costPrice, setCostPrice] = useState("");
+  const [wholesaleCostPrice, setWholesaleCostPrice] = useState("");
   const [weight, setWeight] = useState("");
   const [categoryId, setCategoryId] = useState("");
   const [supplierId, setSupplierId] = useState("");
@@ -81,6 +82,7 @@ export default function ProductForm({
       setUnitPrice(String(product.unit_price));
       setWholesalePrice(product.wholesale_price != null ? String(product.wholesale_price) : "");
       setCostPrice(product.effective_cost != null ? String(product.effective_cost) : "");
+      setWholesaleCostPrice(product.wholesale_cost_price != null ? String(product.wholesale_cost_price) : "");
       setWeight(product.weight ? String(product.weight) : "");
       setCategoryId(String(product.category_id));
       setSupplierId(product.supplier_id ? String(product.supplier_id) : "");
@@ -94,6 +96,7 @@ export default function ProductForm({
       setUnitPrice("");
       setWholesalePrice("");
       setCostPrice("");
+      setWholesaleCostPrice("");
       setWeight("");
       setCategoryId("");
       setSupplierId("");
@@ -232,6 +235,7 @@ export default function ProductForm({
       unit_price: parseFloat(unitPrice),
       wholesale_price: wholesalePrice ? parseFloat(wholesalePrice) : null,
       cost_price: canEditCost && costPrice ? parseFloat(costPrice) : undefined,
+      wholesale_cost_price: canEditCost && wholesaleCostPrice ? parseFloat(wholesaleCostPrice) : undefined,
       weight: weight ? parseFloat(weight) : undefined,
       category_id: parseInt(categoryId),
       supplier_id: supplierId ? parseInt(supplierId) : null,
@@ -501,18 +505,32 @@ export default function ProductForm({
                 </div>
               )}
               {canSeeCost && (
-                <div>
-                  <Label>Costo</Label>
-                  <Input
-                    type="number"
-                    placeholder="0.00"
-                    value={costPrice}
-                    onChange={(e) => setCostPrice(e.target.value)}
-                    step={0.01}
-                    min="0"
-                    disabled={loading || !canEditCost}
-                  />
-                </div>
+                <>
+                  <div>
+                    <Label>Costo</Label>
+                    <Input
+                      type="number"
+                      placeholder="0.00"
+                      value={costPrice}
+                      onChange={(e) => setCostPrice(e.target.value)}
+                      step={0.01}
+                      min="0"
+                      disabled={loading || !canEditCost}
+                    />
+                  </div>
+                  <div>
+                    <Label>Costo por Mayor</Label>
+                    <Input
+                      type="number"
+                      placeholder="0.00"
+                      value={wholesaleCostPrice}
+                      onChange={(e) => setWholesaleCostPrice(e.target.value)}
+                      step={0.01}
+                      min="0"
+                      disabled={loading || !canEditCost}
+                    />
+                  </div>
+                </>
               )}
             </div>
           )}

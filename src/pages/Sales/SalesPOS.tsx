@@ -4,7 +4,6 @@ import PageMeta from "../../components/common/PageMeta";
 import PageBreadcrumb from "../../components/common/PageBreadCrumb";
 import { useToast } from "../../context/ToastContext";
 import { useAuth } from "../../context/AuthContext";
-import { usePermissions } from "../../hooks/usePermissions";
 import { productService } from "../../services/product.service";
 import { categoryService } from "../../services/category.service";
 import { customerService } from "../../services/customer.service";
@@ -32,8 +31,6 @@ interface CartItem {
 export default function SalesIndex() {
   const { showToast } = useToast();
   const { user } = useAuth();
-  const { can } = usePermissions();
-  const canSeeWholesale = can("wholesale", "read");
 
   const [products, setProducts] = useState<Product[]>([]);
   const [categories, setCategories] = useState<Category[]>([]);
@@ -56,12 +53,10 @@ export default function SalesIndex() {
   const [selectedProduct, setSelectedProduct] = useState<Product | null>(null);
   const [showProductDetail, setShowProductDetail] = useState(false);
   const [hasOpenSession, setHasOpenSession] = useState(true);
-  const [wholesaleMode, setWholesaleMode] = useState(false);
 
   const abortRef = useRef<AbortController | null>(null);
   const invAbortRef = useRef<AbortController | null>(null);
   const prevWarehouseIdRef = useRef<number | null>(null);
-  const prevWholesaleModeRef = useRef(wholesaleMode);
 
   const getActivePrice = useCallback((product: Product, isWholesale: boolean): number => {
     if (isWholesale && product.wholesale_price != null) {
@@ -161,18 +156,6 @@ export default function SalesIndex() {
     prevWarehouseIdRef.current = selectedWarehouse?.id ?? null;
   }, [selectedWarehouse]);
 
-  // Clear cart when toggling wholesale mode (not on initial render)
-  useEffect(() => {
-    if (prevWholesaleModeRef.current !== wholesaleMode) {
-      setCart([]);
-      setSelectedCustomer(null);
-      setPaymentMethod("");
-      setNotes("");
-      setShowValidation(false);
-    }
-    prevWholesaleModeRef.current = wholesaleMode;
-  }, [wholesaleMode]);
-
   const addToCart = useCallback((product: Product, quantity: number = 1) => {
     setCart((prev) => {
       const existing = prev.find((i) => i.product.id === product.id);
@@ -181,10 +164,10 @@ export default function SalesIndex() {
           i.product.id === product.id ? { ...i, quantity: i.quantity + quantity } : i
         );
       }
-      const isWholesale = wholesaleMode && product.wholesale_price != null;
+      const isWholesale = !!selectedWarehouse?.is_wholesale && product.wholesale_price != null;
       return [...prev, { product, quantity, discount: 0, isWholesale }];
     });
-  }, [wholesaleMode]);
+  }, [selectedWarehouse]);
 
   const handleProductClick = useCallback((product: Product) => {
     setSelectedProduct(product);
@@ -260,6 +243,7 @@ export default function SalesIndex() {
             quantity: item.quantity,
             unit_price: price,
             discount: item.discount || 0,
+            is_wholesale: item.isWholesale,
           };
         }),
       };
@@ -318,22 +302,6 @@ export default function SalesIndex() {
 
       <div className="grid grid-cols-1 xl:grid-cols-3 gap-6">
         <div className="xl:col-span-2">
-          {canSeeWholesale && (
-            <div className="mb-4 flex items-center gap-3">
-              <label className="relative inline-flex items-center cursor-pointer">
-                <input
-                  type="checkbox"
-                  checked={wholesaleMode}
-                  onChange={(e) => setWholesaleMode(e.target.checked)}
-                  className="sr-only peer"
-                />
-                <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-brand-500/20 rounded-full peer dark:bg-gray-700 peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all dark:border-gray-600 peer-checked:bg-brand-500"></div>
-              </label>
-              <span className="text-sm font-medium text-gray-700 dark:text-gray-300">
-                Ventas por Mayor
-              </span>
-            </div>
-          )}
           <ProductGrid
             products={products}
             categories={categories}
@@ -346,7 +314,7 @@ export default function SalesIndex() {
             onAddToCart={addToCart}
             onProductClick={handleProductClick}
             cart={cart}
-            wholesaleMode={wholesaleMode}
+            wholesaleMode={selectedWarehouse?.is_wholesale ?? false}
           />
         </div>
         <div className="xl:col-span-1">
@@ -388,6 +356,7 @@ export default function SalesIndex() {
         selectedWarehouse={selectedWarehouse}
         paymentMethod={paymentMethod}
         notes={notes}
+        getActivePrice={getActivePrice}
         onConfirm={confirmSale}
         onBack={() => setShowReview(false)}
       />
@@ -396,6 +365,7 @@ export default function SalesIndex() {
         isOpen={showReceipt}
         sale={lastSale}
         customerName={customerName}
+        sellerName={user ? `${user.first_name} ${user.last_name}` : "Sistema"}
         onClose={() => setShowReceipt(false)}
         onNewSale={handleNewSale}
       />
@@ -408,7 +378,7 @@ export default function SalesIndex() {
         availableStock={selectedProduct
           ? Math.max(0, (warehouseInventory.get(selectedProduct.id) ?? 0) - (cart.find((i) => i.product.id === selectedProduct.id)?.quantity ?? 0))
           : 0}
-        wholesaleMode={wholesaleMode}
+        wholesaleMode={selectedWarehouse?.is_wholesale ?? false}
         getActivePrice={getActivePrice}
         onClose={() => setShowProductDetail(false)}
         onAddToCart={handleAddToCartFromModal}
