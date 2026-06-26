@@ -1,0 +1,10 @@
+.env
+AGENTS.md
+node_modules
+.agents
+.opencode
+.DS_Store
+
+dist/
+build/
+skills-lock.json
