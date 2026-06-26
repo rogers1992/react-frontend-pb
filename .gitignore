@@ -5,6 +5,13 @@ node_modules
 .opencode
 .DS_Store
 
+# Build output
+dist/
+build/
+
+# Opencode tooling
+skills-lock.json
+
 dist/
 build/
 skills-lock.json
