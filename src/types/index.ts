@@ -122,6 +122,16 @@ export interface CategoryCreate {
   description?: string;
 }
 
+/**
+ * Partial update for an existing Category (sent to API)
+ * All fields are optional, only include the ones you want to update
+ */
+
+export interface CategoryUpdate {
+  name?: string;
+  description?: string;
+}
+
 // =========================
 // SUPPLIER TYPES
 // =========================
@@ -138,6 +148,19 @@ export interface Supplier {
 
 export interface SupplierCreate {
   name: string;
+  contact_name?: string;
+  email?: string;
+  phone?: string;
+  address?: string;
+}
+
+/**
+ * Partial update for an existing Supplier (sent to API)
+ * All fields are optional, only include the ones you want to update
+ */
+
+export interface SupplierUpdate {
+  name?: string;
   contact_name?: string;
   email?: string;
   phone?: string;

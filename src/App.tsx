@@ -20,6 +20,8 @@ import { ScrollToTop } from "./components/common/ScrollToTop";
 import Home from "./pages/Dashboard/Home";
 import ProtectedRoute from "./components/auth/ProtectedRoute";
 import ProductIndex from "./pages/Products/ProductIndex";
+import CategoryIndex from "./pages/Categories/CategoryIndex";
+import SupplierIndex from "./pages/Suppliers/SupplierIndex";
 import InventoryIndex from "./pages/Inventory/InventoryIndex";
 import WarehouseIndex from "./pages/Warehouses/WarehouseIndex";
 
@@ -39,6 +41,8 @@ export default function App() {
           >
             <Route index path="/" element={<Home />} />
             <Route path="/products" element={<ProductIndex />} />
+            <Route path="/categories" element={<CategoryIndex />} />
+            <Route path="/suppliers" element={<SupplierIndex />} />
             <Route path="/inventory" element={<InventoryIndex />} />
             <Route path="/warehouses" element={<WarehouseIndex />} />
 
