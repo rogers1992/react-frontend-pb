@@ -106,22 +106,61 @@ export default function ProductIndex() {
     setSelectedProduct(null);
   };
 
-  const handleSubmitForm = async (data: ProductCreate | ProductUpdate) => {
+  const handleSubmitForm = async ({
+    data,
+    imageFile,
+    removeExistingImage,
+  }: {
+    data: ProductCreate | ProductUpdate;
+    imageFile: File | null;
+    removeExistingImage: boolean;
+  }) => {
     try {
       setFormLoading(true);
+      let savedProduct: Product;
       if (selectedProduct) {
-        await productService.update(selectedProduct.id, data as ProductUpdate);
+        const updated = await productService.update(
+          selectedProduct.id,
+          data as ProductUpdate,
+        );
         showToast({
           type: "success",
           message: "Producto actualizado exitosamente.",
         });
+        savedProduct = updated;
       } else {
-        await productService.create(data as ProductCreate);
+        const created = await productService.create(data as ProductCreate);
         showToast({
           type: "success",
           message: "Producto creado exitosamente.",
         });
+        savedProduct = created;
       }
+
+      // ---- Two-step: now handle the image (only against the saved product) ----
+      if (imageFile) {
+        try {
+          await productService.uploadImage(savedProduct.id, imageFile);
+        } catch (error) {
+          // The product itself was saved; surface the image failure but keep going.
+          const message = getErrorMessage(
+            error,
+            "El producto se guardo pero la imagen no pudo subirse.",
+          );
+          showToast({ type: "error", message });
+        }
+      } else if (removeExistingImage && savedProduct.image_url) {
+        try {
+          await productService.removeImage(savedProduct.id);
+        } catch (error) {
+          const message = getErrorMessage(
+            error,
+            "No se pudo eliminar la imagen.",
+          );
+          showToast({ type: "error", message });
+        }
+      }
+
       handleCloseForm();
       await refreshData();
     } catch (error) {

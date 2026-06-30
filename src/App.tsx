@@ -24,6 +24,11 @@ import CategoryIndex from "./pages/Categories/CategoryIndex";
 import SupplierIndex from "./pages/Suppliers/SupplierIndex";
 import InventoryIndex from "./pages/Inventory/InventoryIndex";
 import WarehouseIndex from "./pages/Warehouses/WarehouseIndex";
+import UserIndex from "./pages/Users/UserIndex";
+import RoleIndex from "./pages/Roles/RoleIndex";
+import NotificationIndex from "./pages/Notifications/NotificationIndex";
+import Unauthorized from "./pages/OtherPage/Unauthorized";
+import PermissionRoute from "./components/auth/PermissionRoute";
 
 export default function App() {
   return (
@@ -45,6 +50,26 @@ export default function App() {
             <Route path="/suppliers" element={<SupplierIndex />} />
             <Route path="/inventory" element={<InventoryIndex />} />
             <Route path="/warehouses" element={<WarehouseIndex />} />
+
+            {/* Administration - permission gated */}
+            <Route
+              path="/users"
+              element={
+                <PermissionRoute resource="users" action="read">
+                  <UserIndex />
+                </PermissionRoute>
+              }
+            />
+            <Route
+              path="/roles"
+              element={
+                <PermissionRoute resource="roles" action="read">
+                  <RoleIndex />
+                </PermissionRoute>
+              }
+            />
+            <Route path="/no-autizado" element={<Unauthorized />} />
+            <Route path="/notifications" element={<NotificationIndex />} />
 
             {/* Others Page */}
             <Route path="/profile" element={<UserProfiles />} />

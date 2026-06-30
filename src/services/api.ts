@@ -91,3 +91,23 @@ api.interceptors.response.use(
 );
 
 export default api;
+
+/**
+ * Resolve a (possibly relative) product image URL returned by the backend
+ * to a full URL the <img src> can use.
+ *
+ * - null / empty -> null (caller shows a placeholder)
+ * - already absolute (http/https) -> returned unchanged
+ * - relative (e.g. "/uploads/products/1_123.jpg") -> prepended with the
+ *   backend origin derived from VITE_API_URL (stripped of the "/api" suffix)
+ *   or the default "http://localhost:8000".
+ */
+export function resolveImageUrl(relativePath?: string | null): string | null {
+  if (!relativePath) return null;
+  if (/^https?:\/\//i.test(relativePath)) return relativePath;
+
+  const apiBase = import.meta.env.VITE_API_URL || 'http://localhost:8000/api';
+  // Strip trailing "/api" to get the backend origin.
+  const origin = apiBase.replace(/\/api\/?$/i, '');
+  return `${origin}${relativePath.startsWith('/') ? '' : '/'}${relativePath}`;
+}

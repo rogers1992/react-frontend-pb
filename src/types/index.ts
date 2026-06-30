@@ -7,6 +7,47 @@ export interface Role {
   created_at: string;
 }
 
+/**
+ * Constants used by the permission matrix editor.
+ * Must stay in sync with backend VALID_RESOURCES / VALID_ACTIONS
+ * (backend/app/schemas/role.py)
+ */
+export const VALID_RESOURCES = [
+  "products",
+  "inventory",
+  "sales",
+  "customers",
+  "users",
+  "roles",
+  "reports",
+  "categories",
+  "suppliers",
+] as const;
+
+export const VALID_ACTIONS = ["read", "create", "update", "delete"] as const;
+
+export type PermissionResource = (typeof VALID_RESOURCES)[number];
+export type PermissionAction = (typeof VALID_ACTIONS)[number];
+
+/**
+ * Data needed to create a role (sent to API)
+ */
+export interface RoleCreate {
+  name: string;
+  description?: string;
+  permissions: Record<string, string[]>;
+}
+
+/**
+ * Partial update for an existing Role (sent to API)
+ * All fields are optional, only include the ones you want to update
+ */
+export interface RoleUpdate {
+  name?: string;
+  description?: string;
+  permissions?: Record<string, string[]>;
+}
+
 // USER TYPES
 /**
  * Basic user information(shared across user types)
@@ -29,7 +70,7 @@ export interface User extends UserBase {
   is_active: boolean;
   last_login?: string;
   created_at: string;
-  updated_at: string;
+  updated_at?: string;
 }
 
 /**
@@ -51,6 +92,52 @@ export interface LoginResponse {
   user: User;
 }
 
+// =========================
+// USER MANAGEMENT TYPES
+// =========================
+
+/**
+ * User with role always populated (returned from /api/users endpoints)
+ */
+export interface UserWithRole extends User {
+  role: Role;
+}
+
+/**
+ * Data needed to create a user (sent to API)
+ * Username is immutable after creation; password is set at creation only.
+ */
+export interface UserCreate {
+  username: string;
+  email: string;
+  first_name: string;
+  last_name: string;
+  phone?: string;
+  password: string;
+  role_id: number;
+}
+
+/**
+ * Partial update for an existing User (sent to API)
+ * Username and password are NOT editable here.
+ * Use resetPassword for password changes.
+ */
+export interface UserUpdate {
+  email?: string;
+  first_name?: string;
+  last_name?: string;
+  phone?: string;
+  role_id?: number;
+}
+
+export interface UserPasswordReset {
+  new_password: string;
+}
+
+export interface UserToggleActive {
+  is_active: boolean;
+}
+
 //=========================
 // PRODUCT TYPES
 //=========================
@@ -67,6 +154,7 @@ export interface Product {
   description?: string;
   unit_price: number;
   weight?: number;
+  image_url?: string;
   category_id: number;
   supplier_id?: number;
   is_active: boolean;
@@ -101,6 +189,7 @@ export interface ProductUpdate {
   description?: string;
   unit_price: number;
   weight?: number;
+  image_url?: string | null;
   category_id?: number;
   supplier_id?: number;
   is_active?: boolean;
@@ -330,6 +419,27 @@ export interface SaleCreate {
   payment_method: string;
   notes?: string;
   items: SaleItemCreate[];
+}
+
+// =========================
+// NOTIFICATION TYPES
+// =========================
+
+export type NotificationType = "low_stock" | "new_sale" | string;
+
+export interface Notification {
+  id: number;
+  user_id: number;
+  type: NotificationType;
+  title: string;
+  message: string;
+  data?: Record<string, unknown>;
+  is_read: boolean;
+  created_at: string;
+}
+
+export interface UnreadCountResponse {
+  unread_count: number;
 }
 
 //=========================

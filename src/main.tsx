@@ -7,6 +7,7 @@ import App from "./App.tsx";
 import { AppWrapper } from "./components/common/PageMeta.tsx";
 import { ThemeProvider } from "./context/ThemeContext.tsx";
 import { AuthProvider } from "./context/AuthContext.tsx";
+import { NotificationProvider } from "./context/NotificationContext.tsx";
 import { ToastProvider } from "./context/ToastContext.tsx";
 import ToastContainer from "./components/common/Toast.tsx";
 
@@ -14,12 +15,14 @@ createRoot(document.getElementById("root")!).render(
   <StrictMode>
     <ThemeProvider>
       <AuthProvider>
-        <ToastProvider>
-          <AppWrapper>
-            <App />
-            <ToastContainer />
-          </AppWrapper>
-        </ToastProvider>
+        <NotificationProvider>
+          <ToastProvider>
+            <AppWrapper>
+              <App />
+              <ToastContainer />
+            </AppWrapper>
+          </ToastProvider>
+        </NotificationProvider>
       </AuthProvider>
     </ThemeProvider>
   </StrictMode>

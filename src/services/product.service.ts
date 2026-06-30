@@ -107,4 +107,33 @@ export const productService = {
   delete: async (id: number): Promise<void> => {
     await api.delete(`/products/${id}`);
   },
+
+  /**
+   * Upload (or replace) the product image.
+   *
+   * Two-step flow: call this AFTER create/update so we have the product id.
+   * Returns the saved image URL (server-relative path like "/uploads/products/...").
+   */
+  uploadImage: async (id: number, file: File): Promise<{ image_url: string }> => {
+    const formData = new FormData();
+    formData.append("file", file);
+    const response = await api.post<{ image_url: string }>(
+      `/products/${id}/image`,
+      formData,
+      {
+        headers: { "Content-Type": "multipart/form-data" },
+      },
+    );
+    return response.data;
+  },
+
+  /**
+   * Remove the product image. Leaves image_url = null on the product.
+   */
+  removeImage: async (id: number): Promise<{ message: string }> => {
+    const response = await api.delete<{ message: string }>(
+      `/products/${id}/image`,
+    );
+    return response.data;
+  },
 };
