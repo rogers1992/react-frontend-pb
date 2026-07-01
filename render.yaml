@@ -3,10 +3,18 @@ services:
     name: paraiso-biker-web
     buildCommand: npm ci && npm run build
     staticPublishPath: ./dist
+    pullRequestPreviewsEnabled: false
     envVars:
       - key: VITE_API_URL
-        sync: false
-    redirects:
-      - source: /*
+        value: https://fastapi-backend-pb.onrender.com/api
+    routes:
+      - type: rewrite
+        source: /*
         destination: /index.html
-        status: 200
+    headers:
+      - path: /assets/*
+        name: Cache-Control
+        value: public, max-age=31536000, immutable
+      - path: /index.html
+        name: Cache-Control
+        value: no-cache
