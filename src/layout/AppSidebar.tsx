@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { Link, useLocation } from "react-router";
 
 // Assume these icons are imported from an icon library
@@ -12,15 +12,28 @@ import {
   SalesIcon,
   CustomerIcon,
   ReportsIcon,
+  ConfigurationIcon,
+  AlertIcon,
 } from "../icons";
 import { useSidebar } from "../context/SidebarContext";
+import { usePermissions } from "../hooks/usePermissions";
+import type { PermissionResource, PermissionAction } from "../types";
 import SidebarWidget from "./SidebarWidget";
+
+type NavPermission = { resource: PermissionResource; action: PermissionAction };
 
 type NavItem = {
   name: string;
   icon: React.ReactNode;
   path?: string;
-  subItems?: { name: string; path: string; pro?: boolean; new?: boolean }[];
+  permission?: NavPermission;
+  subItems?: {
+    name: string;
+    path: string;
+    pro?: boolean;
+    new?: boolean;
+    permission?: NavPermission;
+  }[];
 };
 
 const navItems: NavItem[] = [
@@ -33,12 +46,17 @@ const navItems: NavItem[] = [
   {
     icon: <ProductsIcon />,
     name: "Productos",
-    path: "/products",
+    subItems: [
+      { name: "Productos", path: "/products", pro: false, permission: { resource: "products", action: "read" } },
+      { name: "Categorias", path: "/categories", pro: false, permission: { resource: "categories", action: "read" } },
+      { name: "Proveedores", path: "/suppliers", pro: false, permission: { resource: "suppliers", action: "read" } },
+    ],
   },
   {
     icon: <InventoryIcon />,
     name: "Inventario",
     path: "/inventory",
+    permission: { resource: "inventory", action: "read" },
   },
   {
     icon: <BoxCubeIcon />,
@@ -49,16 +67,32 @@ const navItems: NavItem[] = [
     icon: <SalesIcon />,
     name: "Ventas",
     path: "/sales",
+    permission: { resource: "sales", action: "read" },
   },
   {
     icon: <CustomerIcon />,
     name: "Clientes",
     path: "/customers",
+    permission: { resource: "customers", action: "read" },
   },
   {
     icon: <ReportsIcon />,
     name: "Reportes",
     path: "/reports",
+    permission: { resource: "reports", action: "read" },
+  },
+  {
+    icon: <AlertIcon />,
+    name: "Notificaciones",
+    path: "/notifications",
+  },
+  {
+    icon: <ConfigurationIcon />,
+    name: "Administracion",
+    subItems: [
+      { name: "Usuarios", path: "/users", pro: false, permission: { resource: "users", action: "read" } },
+      { name: "Roles", path: "/roles", pro: false, permission: { resource: "roles", action: "read" } },
+    ],
   },
   /*
   {
@@ -138,6 +172,7 @@ const othersItems: NavItem[] = [
 const AppSidebar: React.FC = () => {
   const { isExpanded, isMobileOpen, isHovered, setIsHovered } = useSidebar();
   const location = useLocation();
+  const { can } = usePermissions();
 
   const [openSubmenu, setOpenSubmenu] = useState<{
     type: "main" | "others";
@@ -148,6 +183,30 @@ const AppSidebar: React.FC = () => {
   );
   const subMenuRefs = useRef<Record<string, HTMLDivElement | null>>({});
 
+  // Permission-aware filtering: hide items/sub-items the current user
+  // cannot access. Parent dropdowns with no visible sub-items are hidden.
+  const visibleNavItems = useMemo(() => {
+    const filterItem = (item: NavItem): NavItem | null => {
+      if (item.subItems) {
+        const visibleSubs = item.subItems.filter(
+          (s) => !s.permission || can(s.permission.resource, s.permission.action),
+        );
+        if (visibleSubs.length === 0) return null;
+        return { ...item, subItems: visibleSubs };
+      }
+      if (item.permission && !can(item.permission.resource, item.permission.action)) {
+        return null;
+      }
+      return item;
+    };
+    return navItems.map(filterItem).filter((i): i is NavItem => i !== null);
+  }, [can]);
+
+  const visibleOthersItems = useMemo(
+    () => othersItems.filter((i) => !i.permission || can(i.permission.resource, i.permission.action)),
+    [can],
+  );
+
   // const isActive = (path: string) => location.pathname === path;
   const isActive = useCallback(
     (path: string) => location.pathname === path,
@@ -157,7 +216,7 @@ const AppSidebar: React.FC = () => {
   useEffect(() => {
     let submenuMatched = false;
     ["main", "others"].forEach((menuType) => {
-      const items = menuType === "main" ? navItems : othersItems;
+      const items = menuType === "main" ? visibleNavItems : visibleOthersItems;
       items.forEach((nav, index) => {
         if (nav.subItems) {
           nav.subItems.forEach((subItem) => {
@@ -176,7 +235,7 @@ const AppSidebar: React.FC = () => {
     if (!submenuMatched) {
       setOpenSubmenu(null);
     }
-  }, [location, isActive]);
+  }, [location, isActive, visibleNavItems, visibleOthersItems]);
 
   useEffect(() => {
     if (openSubmenu !== null) {
@@ -391,7 +450,7 @@ const AppSidebar: React.FC = () => {
                   <HorizontaLDots className="size-6" />
                 )}
               </h2>
-              {renderMenuItems(navItems, "main")}
+              {renderMenuItems(visibleNavItems, "main")}
             </div>
             <div className="">
               <h2
@@ -407,7 +466,7 @@ const AppSidebar: React.FC = () => {
                   <HorizontaLDots />
                 )}
               </h2>
-              {renderMenuItems(othersItems, "others")}
+              {renderMenuItems(visibleOthersItems, "others")}
             </div>
           </div>
         </nav>

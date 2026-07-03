@@ -1,5 +1,5 @@
 import api from './api';
-import type { Category, CategoryCreate } from '../types';
+import type { Category, CategoryCreate, CategoryUpdate } from '../types';
 
 export const categoryService = {
   getAll: async (): Promise<Category[]> => {
@@ -17,7 +17,7 @@ export const categoryService = {
     return response.data;
   },
 
-  update: async (id: number, data: CategoryCreate): Promise<Category> => {
+  update: async (id: number, data: CategoryUpdate): Promise<Category> => {
     const response = await api.put<Category>(`/categories/${id}`, data);
     return response.data;
   },

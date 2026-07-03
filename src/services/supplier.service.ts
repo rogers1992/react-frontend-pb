@@ -1,5 +1,5 @@
 import api from './api';
-import type { Supplier, SupplierCreate } from '../types';
+import type { Supplier, SupplierCreate, SupplierUpdate } from '../types';
 
 export const supplierService = {
   getAll: async (): Promise<Supplier[]> => {
@@ -17,7 +17,7 @@ export const supplierService = {
     return response.data;
   },
 
-  update: async (id: number, data: SupplierCreate): Promise<Supplier> => {
+  update: async (id: number, data: SupplierUpdate): Promise<Supplier> => {
     const response = await api.put<Supplier>(`/suppliers/${id}`, data);
     return response.data;
   },
