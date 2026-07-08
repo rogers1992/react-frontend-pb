@@ -199,7 +199,7 @@ export default function InventoryIndex() {
   const warehouseMap = new Map(warehouses.map((w) => [w.id, w.name]));
 
   const columns = getInventoryColumns(
-    productMap,
+    products,
     warehouseMap,
     handleOpenEdit,
     handleOpenTransfer,

@@ -1,15 +1,39 @@
 import type { Column } from "../../../components/common/DataTable";
 import Badge from "../../../components/ui/badge/Badge";
 import InventoryActions from "./InventoryActions";
-import type { InventoryItem } from "../../../types";
+import { resolveImageUrl } from "../../../services/api";
+import type { InventoryItem, Product } from "../../../types";
+
+function ProductThumbnail({ product }: { product: Product }) {
+  const url = resolveImageUrl(product.image_url);
+  if (url) {
+    return (
+      <div className="h-10 w-10 shrink-0 overflow-hidden rounded-full bg-gray-100 dark:bg-gray-800">
+        <img
+          src={url}
+          alt={product.name}
+          className="h-full w-full object-cover"
+        />
+      </div>
+    );
+  }
+  const initial = product.name?.[0]?.toUpperCase() ?? "?";
+  return (
+    <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-brand-500/10 text-sm font-semibold text-brand-500 dark:bg-brand-500/15 dark:text-brand-400">
+      {initial}
+    </div>
+  );
+}
 
 export function getInventoryColumns(
-  productMap: Map<number, { name: string; sku?: string }>,
+  products: Product[],
   warehouseMap: Map<number, string>,
   onEdit: (item: InventoryItem) => void,
   onTransfer: (item: InventoryItem) => void,
   onDelete: (item: InventoryItem) => void,
 ): Column<InventoryItem>[] {
+  const productMap = new Map(products.map((p) => [p.id, p]));
+
   return [
     {
       key: "product",
@@ -17,10 +41,20 @@ export function getInventoryColumns(
       sortable: true,
       render: (item: InventoryItem) => {
         const product = productMap.get(item.product_id);
+        if (!product) {
+          return (
+            <span className="font-medium text-gray-800 dark:text-white/90">
+              Producto #{item.product_id}
+            </span>
+          );
+        }
         return (
-          <span className="font-medium text-gray-800 dark:text-white/90">
-            {product?.name || `Producto #${item.product_id}`}
-          </span>
+          <div className="flex items-center gap-3">
+            <ProductThumbnail product={product} />
+            <span className="font-medium text-gray-800 dark:text-white/90">
+              {product.name}
+            </span>
+          </div>
         );
       },
     },

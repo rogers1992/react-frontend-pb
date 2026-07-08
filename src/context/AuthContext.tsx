@@ -1,6 +1,7 @@
 import { createContext, useContext, useState, useEffect } from "react";
 import type { ReactNode } from "react";
 import { authService } from "../services/auth.service";
+import { getErrorMessage } from "../utils/error";
 import type { User, LoginRequest } from "../types";
 
 /**
@@ -123,10 +124,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       localStorage.setItem("user", JSON.stringify(response.user));
     } catch (err: any) {
       // Extract error message from axios error response
-      const errorMessage =
-        err.response?.data?.detail || // Backend error message
-        err.message || // Network error
-        "Login failed"; // Fallback
+      const errorMessage = getErrorMessage(err, "Error al iniciar sesión");
 
       setError(errorMessage);
       throw err; // Re-throw so component can handle it

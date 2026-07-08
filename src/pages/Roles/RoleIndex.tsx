@@ -20,7 +20,12 @@ import type {
   PermissionResource,
   PermissionAction,
 } from "../../types";
-import { VALID_RESOURCES, VALID_ACTIONS } from "../../types";
+import {
+  VALID_RESOURCES,
+  VALID_ACTIONS,
+  RESOURCE_LABELS,
+  ACTION_LABELS,
+} from "../../types";
 
 export default function RoleIndex() {
   const { showToast } = useToast();
@@ -354,7 +359,7 @@ export default function RoleIndex() {
                             key={action}
                             className="px-3 py-3 text-center font-medium text-gray-600 capitalize text-theme-xs dark:text-gray-300"
                           >
-                            {action}
+                            {ACTION_LABELS[action] ?? action}
                           </th>
                         ))}
                         <th className="px-3 py-3 text-center font-medium text-gray-600 text-theme-xs dark:text-gray-300">
@@ -369,7 +374,7 @@ export default function RoleIndex() {
                           className="hover:bg-gray-50 dark:hover:bg-white/[0.02]"
                         >
                           <td className="px-4 py-2.5 capitalize text-gray-700 dark:text-gray-300">
-                            {resource}
+                            {RESOURCE_LABELS[resource] ?? resource}
                           </td>
                           {VALID_ACTIONS.map((action) => (
                             <td

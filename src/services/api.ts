@@ -75,16 +75,20 @@ api.interceptors.response.use(
     // Check if error is 401 (Unauthorized)
     // This means token is expired or invalid
     if (error.response?.status === 401) {
-      // Clear authentication data
-      localStorage.removeItem('token');
-      localStorage.removeItem('user');
-      
-      // Redirect to login page
-      // Using window.location forces a full page reload
-      // This clears all React state and starts fresh
-      window.location.href = '/signin';
+      // Don't redirect on login failures — the form handles those
+      const isLoginRequest = error.config?.url?.includes('/auth/login');
+      if (!isLoginRequest) {
+        // Clear authentication data
+        localStorage.removeItem('token');
+        localStorage.removeItem('user');
+
+        // Redirect to login page
+        // Using window.location forces a full page reload
+        // This clears all React state and starts fresh
+        window.location.href = '/signin';
+      }
     }
-    
+
     // Reject the promise so calling code can handle the error
     return Promise.reject(error);
   }

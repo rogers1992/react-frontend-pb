@@ -52,15 +52,24 @@ export default function UserIndex() {
   const fetchData = useCallback(async () => {
     try {
       setLoading(true);
-      const [usersData, rolesData] = await Promise.all([
+      const [usersRes, rolesRes] = await Promise.allSettled([
         userService.getAll(0, 500, searchQuery || undefined),
         roleService.getAll(),
       ]);
-      setUsers(usersData);
-      setRoles(rolesData);
-    } catch (error) {
-      const message = getErrorMessage(error, "Error al cargar los usuarios.");
-      showToast({ type: "error", message });
+      if (usersRes.status === "fulfilled") {
+        setUsers(usersRes.value);
+      } else {
+        showToast({
+          type: "error",
+          message: getErrorMessage(
+            usersRes.reason,
+            "Error al cargar los usuarios.",
+          ),
+        });
+      }
+      if (rolesRes.status === "fulfilled") {
+        setRoles(rolesRes.value);
+      }
     } finally {
       setLoading(false);
     }
@@ -202,8 +211,21 @@ export default function UserIndex() {
     return true;
   });
 
-  const roleMap = new Map(roles.map((r) => [r.id, r.name]));
-  const roleOptions = roles.map((r) => ({ value: String(r.id), label: r.name }));
+  const roleSource: Role[] =
+    roles.length > 0
+      ? roles
+      : Array.from(
+          new Map(
+            users
+              .filter((u) => u.role != null)
+              .map((u) => [u.role.id, u.role] as [number, Role]),
+          ).values(),
+        );
+  const roleMap = new Map(roleSource.map((r) => [r.id, r.name]));
+  const roleOptions = roleSource.map((r) => ({
+    value: String(r.id),
+    label: r.name,
+  }));
 
   const formatDate = (iso?: string) => {
     if (!iso) return "—";

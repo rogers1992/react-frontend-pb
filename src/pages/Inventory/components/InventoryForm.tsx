@@ -4,6 +4,7 @@ import Button from "../../../components/ui/button/Button";
 import Input from "../../../components/form/input/InputField";
 import Label from "../../../components/form/Label";
 import Select from "../../../components/form/Select";
+import SearchableSelect from "./SearchableSelect";
 import type {
   InventoryItem,
   InventoryItemCreate,
@@ -86,6 +87,7 @@ export default function InventoryForm({
   const productOptions = products.map((p) => ({
     value: String(p.id),
     label: p.name,
+    searchText: `${p.name} ${p.sku ?? ""} ${p.barcode ?? ""}`.trim(),
   }));
 
   const warehouseOptions = warehouses.map((w) => ({
@@ -113,11 +115,14 @@ export default function InventoryForm({
               <Label>
                 Producto <span className="text-error-500">*</span>
               </Label>
-              <Select
+              <SearchableSelect
                 options={productOptions}
-                placeholder="Seleccionar producto"
+                value={productId}
                 onChange={setProductId}
-                defaultValue={productId}
+                placeholder="Seleccionar producto"
+                searchPlaceholder="Buscar por nombre, SKU o código..."
+                noResultsText="Sin productos coincidentes"
+                disabled={loading}
               />
             </div>
             <div>

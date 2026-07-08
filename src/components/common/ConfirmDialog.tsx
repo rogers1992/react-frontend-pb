@@ -62,7 +62,7 @@ export default function ConfirmDialog({
   isOpen,
   onClose,
   onConfirm,
-  title = "Confirmar accion",
+  title = "Confirmar acción",
   message,
   confirmText = "Confirmar",
   cancelText = "Cancelar",

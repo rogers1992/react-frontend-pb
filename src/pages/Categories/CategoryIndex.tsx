@@ -11,6 +11,7 @@ import Label from "../../components/form/Label";
 import { PlusIcon, PencilIcon, TrashBinIcon } from "../../icons";
 import { useToast } from "../../context/ToastContext";
 import { categoryService } from "../../services/category.service";
+import { productService } from "../../services/product.service";
 import { getErrorMessage } from "../../utils/error";
 import type {
   Category,
@@ -122,6 +123,21 @@ export default function CategoryIndex() {
     if (!deleteTarget) return;
     try {
       setDeleteLoading(true);
+
+      const products = await productService.getAll(0, 10000);
+      const hasProducts = products.items.some(
+        (p) => p.category_id === deleteTarget.id
+      );
+
+      if (hasProducts) {
+        showToast({
+          type: "error",
+          message: "No se puede eliminar la categoría: está asociada a uno o más productos.",
+        });
+        setDeleteTarget(null);
+        return;
+      }
+
       await categoryService.delete(deleteTarget.id);
       showToast({
         type: "success",

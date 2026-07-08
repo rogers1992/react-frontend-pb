@@ -122,13 +122,13 @@ export default function ProductForm({
 
     const payload = {
       name,
-      sku: sku || undefined,
+      sku: sku || "",
       barcode: barcode || undefined,
       description: description || undefined,
       unit_price: parseFloat(unitPrice),
       weight: weight ? parseFloat(weight) : undefined,
       category_id: parseInt(categoryId),
-      supplier_id: supplierId ? parseInt(supplierId) : undefined,
+      supplier_id: supplierId ? parseInt(supplierId) : null,
     };
 
     if (isEditing) {
