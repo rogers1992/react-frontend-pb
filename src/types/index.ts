@@ -26,6 +26,25 @@ export const VALID_RESOURCES = [
 
 export const VALID_ACTIONS = ["read", "create", "update", "delete"] as const;
 
+export const RESOURCE_LABELS: Record<string, string> = {
+  products: "Productos",
+  inventory: "Inventario",
+  sales: "Ventas",
+  customers: "Clientes",
+  users: "Usuarios",
+  roles: "Roles",
+  reports: "Reportes",
+  categories: "Categorías",
+  suppliers: "Proveedores",
+};
+
+export const ACTION_LABELS: Record<string, string> = {
+  read: "Lectura",
+  create: "Crear",
+  update: "Actualizar",
+  delete: "Eliminar",
+};
+
 export type PermissionResource = (typeof VALID_RESOURCES)[number];
 export type PermissionAction = (typeof VALID_ACTIONS)[number];
 
@@ -174,7 +193,7 @@ export interface ProductCreate {
   unit_price: number;
   weight?: number;
   category_id: number;
-  supplier_id?: number;
+  supplier_id?: number | null;
 }
 
 /**

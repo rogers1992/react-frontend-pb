@@ -64,7 +64,7 @@ export default function InputStates() {
             type="text"
             value="disabled@example.com"
             disabled={true}
-            placeholder="Disabled email"
+            placeholder="Correo deshabilitado"
           />
         </div>
       </div>

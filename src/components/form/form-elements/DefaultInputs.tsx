@@ -88,7 +88,7 @@ export default function DefaultInputs() {
           <div className="relative">
             <Input
               type="text"
-              placeholder="Card number"
+              placeholder="Número de tarjeta"
               className="pl-[62px]"
             />
             <span className="absolute left-0 top-1/2 flex h-11 w-[46px] -translate-y-1/2 items-center justify-center border-r border-gray-200 dark:border-gray-800">

@@ -9,6 +9,7 @@ import Badge from "../../components/ui/badge/Badge";
 import Input from "../../components/form/input/InputField";
 import Label from "../../components/form/Label";
 import { PlusIcon, PencilIcon, TrashBinIcon } from "../../icons";
+import Checkbox from "../../components/form/input/Checkbox";
 import { useToast } from "../../context/ToastContext";
 import { warehouseService } from "../../services/warehouse.service";
 import { getErrorMessage } from "../../utils/error";
@@ -27,6 +28,7 @@ export default function WarehouseIndex() {
 
   const [name, setName] = useState("");
   const [location, setLocation] = useState("");
+  const [isActive, setIsActive] = useState(true);
 
   const [deleteTarget, setDeleteTarget] = useState<Warehouse | null>(null);
   const [deleteLoading, setDeleteLoading] = useState(false);
@@ -51,6 +53,7 @@ export default function WarehouseIndex() {
   const resetForm = () => {
     setName("");
     setLocation("");
+    setIsActive(true);
     setSelectedWarehouse(null);
   };
 
@@ -63,6 +66,7 @@ export default function WarehouseIndex() {
     setSelectedWarehouse(warehouse);
     setName(warehouse.name);
     setLocation(warehouse.location ?? "");
+    setIsActive(warehouse.is_active);
     setIsFormOpen(true);
   };
 
@@ -84,6 +88,7 @@ export default function WarehouseIndex() {
         const updatePayload: WarehouseUpdate = {
           name: name || undefined,
           location: location || undefined,
+          is_active: isActive,
         };
         await warehouseService.update(selectedWarehouse.id, updatePayload);
         showToast({
@@ -262,6 +267,17 @@ export default function WarehouseIndex() {
                 disabled={formLoading}
               />
             </div>
+
+            {selectedWarehouse && (
+              <div>
+                <Checkbox
+                  label="Almacen activo"
+                  checked={isActive}
+                  onChange={setIsActive}
+                  disabled={formLoading}
+                />
+              </div>
+            )}
           </div>
 
           <div className="mt-6 flex items-center justify-end gap-3">

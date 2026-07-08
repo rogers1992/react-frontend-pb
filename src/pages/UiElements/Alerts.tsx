@@ -7,72 +7,72 @@ export default function Alerts() {
   return (
     <>
       <PageMeta
-        title="React.js Alerts Dashboard | TailAdmin - React.js Admin Dashboard Template"
-        description="This is React.js Alerts Dashboard page for TailAdmin - React.js Tailwind CSS Admin Dashboard Template"
+        title="Alertas | Paraiso Biker"
+        description="Página de alertas del panel de administración de Paraiso Biker"
       />
-      <PageBreadcrumb pageTitle="Alerts" />
+      <PageBreadcrumb pageTitle="Alertas" />
       <div className="space-y-5 sm:space-y-6">
-        <ComponentCard title="Success Alert">
+        <ComponentCard title="Alerta de Éxito">
           <Alert
             variant="success"
-            title="Success Message"
-            message="Be cautious when performing this action."
+            title="Mensaje de éxito"
+            message="Ten cuidado al realizar esta acción."
             showLink={true}
             linkHref="/"
-            linkText="Learn more"
+            linkText="Ver más"
           />
           <Alert
             variant="success"
-            title="Success Message"
-            message="Be cautious when performing this action."
+            title="Mensaje de éxito"
+            message="Ten cuidado al realizar esta acción."
             showLink={false}
           />
         </ComponentCard>
-        <ComponentCard title="Warning Alert">
+        <ComponentCard title="Alerta de Advertencia">
           <Alert
             variant="warning"
-            title="Warning Message"
-            message="Be cautious when performing this action."
+            title="Mensaje de advertencia"
+            message="Ten cuidado al realizar esta acción."
             showLink={true}
             linkHref="/"
-            linkText="Learn more"
+            linkText="Ver más"
           />
           <Alert
             variant="warning"
-            title="Warning Message"
-            message="Be cautious when performing this action."
+            title="Mensaje de advertencia"
+            message="Ten cuidado al realizar esta acción."
             showLink={false}
           />
         </ComponentCard>{" "}
-        <ComponentCard title="Error Alert">
+        <ComponentCard title="Alerta de Error">
           <Alert
             variant="error"
-            title="Error Message"
-            message="Be cautious when performing this action."
+            title="Mensaje de error"
+            message="Ten cuidado al realizar esta acción."
             showLink={true}
             linkHref="/"
-            linkText="Learn more"
+            linkText="Ver más"
           />
           <Alert
             variant="error"
-            title="Error Message"
-            message="Be cautious when performing this action."
+            title="Mensaje de error"
+            message="Ten cuidado al realizar esta acción."
             showLink={false}
           />
         </ComponentCard>{" "}
-        <ComponentCard title="Info Alert">
+        <ComponentCard title="Alerta Informativa">
           <Alert
             variant="info"
-            title="Info Message"
-            message="Be cautious when performing this action."
+            title="Mensaje informativo"
+            message="Ten cuidado al realizar esta acción."
             showLink={true}
             linkHref="/"
-            linkText="Learn more"
+            linkText="Ver más"
           />
           <Alert
             variant="info"
-            title="Info Message"
-            message="Be cautious when performing this action."
+            title="Mensaje informativo"
+            message="Ten cuidado al realizar esta acción."
             showLink={false}
           />
         </ComponentCard>

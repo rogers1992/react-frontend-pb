@@ -23,7 +23,7 @@ const MultiSelect: React.FC<MultiSelectProps> = ({
   value,
   onChange,
   disabled = false,
-  placeholder = "Select options",
+  placeholder = "Seleccionar opciones",
 }) => {
   const isControlled = value !== undefined;
   const [internalSelected, setInternalSelected] =

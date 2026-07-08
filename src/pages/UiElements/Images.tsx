@@ -9,18 +9,18 @@ export default function Images() {
   return (
     <>
       <PageMeta
-        title="React.js Images Dashboard | TailAdmin - React.js Admin Dashboard Template"
-        description="This is React.js Images page for TailAdmin - React.js Tailwind CSS Admin Dashboard Template"
+        title="Imágenes | Paraiso Biker"
+        description="Página de imágenes del panel de administración de Paraiso Biker"
       />
-      <PageBreadcrumb pageTitle="Images" />
+      <PageBreadcrumb pageTitle="Imágenes" />
       <div className="space-y-5 sm:space-y-6">
-        <ComponentCard title="Responsive image">
+        <ComponentCard title="Imagen responsiva">
           <ResponsiveImage />
         </ComponentCard>
-        <ComponentCard title="Image in 2 Grid">
+        <ComponentCard title="Imagen en cuadrícula de 2">
           <TwoColumnImageGrid />
         </ComponentCard>
-        <ComponentCard title="Image in 3 Grid">
+        <ComponentCard title="Imagen en cuadrícula de 3">
           <ThreeColumnImageGrid />
         </ComponentCard>
       </div>
