@@ -5,7 +5,6 @@ import { Link, useLocation } from "react-router";
 import {
   BoxCubeIcon,
   ChevronDownIcon,
-  GridIcon,
   HorizontaLDots,
   ProductsIcon,
   InventoryIcon,
@@ -14,6 +13,8 @@ import {
   ReportsIcon,
   ConfigurationIcon,
   AlertIcon,
+  DollarLineIcon,
+  PieChartIcon,
 } from "../icons";
 import { useSidebar } from "../context/SidebarContext";
 import { usePermissions } from "../hooks/usePermissions";
@@ -38,9 +39,10 @@ type NavItem = {
 
 const navItems: NavItem[] = [
   {
-    icon: <GridIcon />,
-    name: "Dashboard",
-    subItems: [{ name: "Ecommerce", path: "/", pro: false }],
+    icon: <PieChartIcon />,
+    name: "Analíticas",
+    path: "/dashboard",
+    permission: { resource: "reports", action: "read" },
   },
   //Adding principal items to the sidebar
   {
@@ -62,12 +64,23 @@ const navItems: NavItem[] = [
     icon: <BoxCubeIcon />,
     name: "Almacenes",
     path: "/warehouses",
+    permission: { resource: "inventory", action: "read" },
+  },
+  {
+    icon: <DollarLineIcon />,
+    name: "Ventas",
+    subItems: [
+      { name: "Historial de Ventas", path: "/sales", pro: false, permission: { resource: "sales", action: "read" } },
+      { name: "Punto de Venta", path: "/sales/new", pro: false, permission: { resource: "sales", action: "read" } },
+    ],
   },
   {
     icon: <SalesIcon />,
-    name: "Ventas",
-    path: "/sales",
-    permission: { resource: "sales", action: "read" },
+    name: "Compras",
+    subItems: [
+      { name: "Historial de Compras", path: "/purchases", pro: false, permission: { resource: "purchases", action: "read" } },
+      { name: "Nueva Compra", path: "/purchases/new", pro: false, permission: { resource: "purchases", action: "create" } },
+    ],
   },
   {
     icon: <CustomerIcon />,

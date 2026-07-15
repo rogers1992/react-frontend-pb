@@ -1,54 +1,82 @@
-import { useEffect } from "react";
+import { useEffect, useId, useRef } from "react";
 import flatpickr from "flatpickr";
+import type { Instance } from "flatpickr/dist/types/instance";
 import "flatpickr/dist/flatpickr.css";
 import Label from "./Label";
 import { CalenderIcon } from "../../icons";
-import Hook = flatpickr.Options.Hook;
 import DateOption = flatpickr.Options.DateOption;
 
 type PropsType = {
-  id: string;
+  id?: string;
   mode?: "single" | "multiple" | "range" | "time";
-  onChange?: Hook | Hook[];
+  value?: string;
   defaultDate?: DateOption;
+  onChange?: (val: string) => void;
   label?: string;
   placeholder?: string;
+  disabled?: boolean;
 };
 
 export default function DatePicker({
   id,
   mode,
+  value,
+  defaultDate,
   onChange,
   label,
-  defaultDate,
   placeholder,
+  disabled,
 }: PropsType) {
+  const reactId = useId();
+  const inputId = id ?? reactId;
+  const inputRef = useRef<HTMLInputElement | null>(null);
+  const fpRef = useRef<Instance | null>(null);
+  const onChangeRef = useRef(onChange);
+  onChangeRef.current = onChange;
+
   useEffect(() => {
-    const flatPickr = flatpickr(`#${id}`, {
+    if (!inputRef.current) return;
+    const fp = flatpickr(inputRef.current, {
       mode: mode || "single",
       static: true,
       monthSelectorType: "static",
       dateFormat: "Y-m-d",
-      defaultDate,
-      onChange,
+      defaultDate: value ?? defaultDate,
+      onChange: (_dates, dateStr) => {
+        onChangeRef.current?.(dateStr);
+      },
     });
-
+    fpRef.current = fp;
     return () => {
-      if (!Array.isArray(flatPickr)) {
-        flatPickr.destroy();
-      }
+      fp.destroy();
+      fpRef.current = null;
     };
-  }, [mode, onChange, id, defaultDate]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  useEffect(() => {
+    if (fpRef.current && value !== undefined) {
+      fpRef.current.setDate(value, false);
+    }
+  }, [value]);
+
+  useEffect(() => {
+    if (inputRef.current) {
+      inputRef.current.disabled = !!disabled;
+    }
+  }, [disabled]);
 
   return (
     <div>
-      {label && <Label htmlFor={id}>{label}</Label>}
+      {label && <Label htmlFor={inputId}>{label}</Label>}
 
       <div className="relative">
         <input
-          id={id}
+          ref={inputRef}
+          id={inputId}
           placeholder={placeholder}
-          className="h-11 w-full rounded-lg border appearance-none px-4 py-2.5 text-sm shadow-theme-xs placeholder:text-gray-400 focus:outline-hidden focus:ring-3  dark:bg-gray-900 dark:text-white/90 dark:placeholder:text-white/30  bg-transparent text-gray-800 border-gray-300 focus:border-brand-300 focus:ring-brand-500/20 dark:border-gray-700  dark:focus:border-brand-800"
+          disabled={disabled}
+          className="h-11 w-full rounded-lg border appearance-none px-4 py-2.5 text-sm shadow-theme-xs placeholder:text-gray-400 focus:outline-hidden focus:ring-3  dark:bg-gray-900 dark:text-white/90 dark:placeholder:text-white/30  bg-transparent text-gray-800 border-gray-300 focus:border-brand-300 focus:ring-brand-500/20 dark:border-gray-700  dark:focus:border-brand-800 disabled:opacity-60 disabled:cursor-not-allowed"
         />
 
         <span className="absolute text-gray-500 -translate-y-1/2 pointer-events-none right-3 top-1/2 dark:text-gray-400">

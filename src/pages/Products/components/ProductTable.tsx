@@ -8,7 +8,7 @@ function ProductThumbnail({ product }: { product: Product }) {
   const url = resolveImageUrl(product.image_url);
   if (url) {
     return (
-      <div className="h-10 w-10 shrink-0 overflow-hidden rounded-full bg-gray-100 dark:bg-gray-800">
+      <div className="w-20 h-20 overflow-hidden border border-gray-200 rounded-full dark:border-gray-800">
         <img
           src={url}
           alt={product.name}
@@ -75,8 +75,11 @@ export function getProductColumns(
       header: "Precio Unitario",
       sortable: true,
       render: (item: Product) => {
-        const price = typeof item.unit_price === "string" ? parseFloat(item.unit_price) : item.unit_price;
-        return `$${price.toFixed(2)}`;
+        const price =
+          typeof item.unit_price === "string"
+            ? parseFloat(item.unit_price)
+            : item.unit_price;
+        return `Bs${price.toFixed(2)}`;
       },
     },
     {

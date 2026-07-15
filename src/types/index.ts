@@ -16,6 +16,7 @@ export const VALID_RESOURCES = [
   "products",
   "inventory",
   "sales",
+  "purchases",
   "customers",
   "users",
   "roles",
@@ -30,6 +31,7 @@ export const RESOURCE_LABELS: Record<string, string> = {
   products: "Productos",
   inventory: "Inventario",
   sales: "Ventas",
+  purchases: "Compras",
   customers: "Clientes",
   users: "Usuarios",
   roles: "Roles",
@@ -280,6 +282,19 @@ export interface SupplierUpdate {
 // =========================
 
 /**
+ * Loyalty program information for a customer
+ */
+
+export interface Loyalty {
+  id: number;
+  customer_id?: number;
+  points: number;
+  tier: string;
+  last_updated?: string;
+  created_at?: string;
+}
+
+/**
  * Customer with all fields (returned from API)
  */
 
@@ -291,7 +306,9 @@ export interface Customer {
   phone?: string;
   address?: string;
   date_of_birth?: string;
+  is_active: number;
   created_at: string;
+  loyalty?: Loyalty;
 }
 
 /**
@@ -319,6 +336,30 @@ export interface CustomerUpdate {
   phone?: string;
   address?: string;
   date_of_birth?: string;
+}
+
+/**
+ * Loyalty adjustment payload
+ */
+
+export interface LoyaltyAdjust {
+  points_change: number;
+  reason?: string;
+}
+
+/**
+ * Customer sale record (from /customers/{id}/sales)
+ */
+
+export interface CustomerSale {
+  id: number;
+  customer_id: number;
+  user_id: number;
+  payment_method: string;
+  total_amount: number;
+  tax_amount: number;
+  notes?: string;
+  sale_date: string;
 }
 
 // =========================
@@ -395,6 +436,7 @@ export interface SaleItem {
   id: number;
   sale_id: number;
   product_id: number;
+  product_name: string;
   quantity: number;
   unit_price: number;
   discount: number;
@@ -483,4 +525,209 @@ export interface PaginationMeta<T> {
   total_pages: number;
   current_page: number;
   page_size: number;
+}
+
+//=========================
+// PURCHASES (ORDERS)
+//=========================
+
+export interface Order {
+  id: number;
+  supplier_id: number;
+  warehouse_id: number;
+  created_by: number;
+  status: string; // pending | received | cancelled
+  total_amount: number;
+  order_date: string;
+  expected_date?: string;
+  received_date?: string;
+  notes?: string;
+  supplier?: Supplier;
+  warehouse?: Warehouse;
+  items: OrderItem[];
+}
+
+export interface OrderItem {
+  id: number;
+  order_id: number;
+  product_id: number;
+  product_name: string;
+  quantity: number;
+  unit_cost: number;
+  total_price: number;
+  received_quantity: number;
+}
+
+export interface OrderItemCreate {
+  product_id: number;
+  quantity: number;
+  unit_cost: number;
+}
+
+export interface OrderCreate {
+  supplier_id: number;
+  warehouse_id: number;
+  expected_date?: string;
+  notes?: string;
+  items: OrderItemCreate[];
+}
+
+// =========================
+// DASHBOARD TYPES
+// =========================
+
+export interface DashboardSummary {
+  revenue_today: number;
+  revenue_week: number;
+  revenue_month: number;
+  sales_count_today: number;
+  sales_count_month: number;
+  avg_ticket: number;
+  tax_collected_month: number;
+  low_stock_count: number;
+  pending_po_count: number;
+  active_customers: number;
+  active_products: number;
+  top_product_name: string | null;
+  top_product_revenue: number | null;
+}
+
+export interface SalesTrendPoint {
+  date_label: string;
+  revenue: number;
+  sales_count: number;
+}
+
+export interface WarehouseStatusRow {
+  warehouse_id: number;
+  warehouse_name: string;
+  quantity: number;
+  items: number;
+}
+
+export interface InventoryStatusItem {
+  product_id: number;
+  product_name: string;
+  sku: string | null;
+  warehouse_id: number;
+  warehouse_name: string;
+  quantity: number;
+  min_stock_level: number;
+  is_low_stock: boolean;
+  is_out_of_stock: boolean;
+}
+
+export interface InventoryStatusSummary {
+  total_quantity: number;
+  total_value: number;
+  low_stock_count: number;
+  out_of_stock_count: number;
+  by_warehouse: WarehouseStatusRow[];
+  low_stock_items: InventoryStatusItem[];
+}
+
+export interface TopProductRow {
+  product_id: number;
+  name: string;
+  sku: string | null;
+  qty_sold: number;
+  revenue: number;
+}
+
+export interface TopCustomerRow {
+  customer_id: number;
+  name: string;
+  orders: number;
+  total_spent: number;
+  tier: string | null;
+}
+
+export interface PaymentMethodRow {
+  payment_method: string;
+  count: number;
+  total: number;
+}
+
+// =========================
+// REPORT TYPES
+// =========================
+
+export type ReportType =
+  | "sales"
+  | "inventory"
+  | "purchases"
+  | "customers"
+  | "products";
+
+export interface SalesReportRow {
+  sale_id: number;
+  sale_date: string | null;
+  customer_id: number | null;
+  customer_name: string | null;
+  seller_id: number | null;
+  seller_name: string | null;
+  payment_method: string;
+  status: string;
+  items_count: number;
+  units_sold: number;
+  subtotal: number;
+  tax_amount: number;
+  total_amount: number;
+}
+
+export interface InventoryReportRow {
+  product_id: number;
+  name: string;
+  sku: string | null;
+  category_id: number | null;
+  category_name: string | null;
+  warehouse_id: number;
+  warehouse_name: string;
+  quantity: number;
+  reserved_quantity: number;
+  min_stock_level: number;
+  max_stock_level: number | null;
+  unit_price: number;
+  stock_value: number;
+  is_low_stock: boolean;
+  is_out_of_stock: boolean;
+}
+
+export interface PurchaseReportRow {
+  order_id: number;
+  order_date: string | null;
+  supplier_id: number | null;
+  supplier_name: string | null;
+  warehouse_id: number | null;
+  warehouse_name: string | null;
+  status: string;
+  items_count: number;
+  units_ordered: number;
+  total_amount: number;
+}
+
+export interface CustomerReportRow {
+  customer_id: number;
+  name: string;
+  email: string | null;
+  phone: string | null;
+  is_active: number;
+  loyalty_tier: string | null;
+  loyalty_points: number | null;
+  orders: number;
+  total_spent: number;
+  last_sale_date: string | null;
+}
+
+export interface ProductReportRow {
+  product_id: number;
+  name: string;
+  sku: string | null;
+  category_id: number | null;
+  category_name: string | null;
+  unit_price: number;
+  is_active: boolean;
+  units_sold: number;
+  revenue: number;
+  stock_quantity: number;
 }
