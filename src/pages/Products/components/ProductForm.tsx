@@ -1,4 +1,4 @@
-import { useState, useEffect, type FormEvent, useRef } from "react";
+import { useState, useEffect, useCallback, type FormEvent, useRef } from "react";
 import { Modal } from "../../../components/ui/modal";
 import Button from "../../../components/ui/button/Button";
 import Input from "../../../components/form/input/InputField";
@@ -7,6 +7,7 @@ import Label from "../../../components/form/Label";
 import Select from "../../../components/form/Select";
 import Checkbox from "../../../components/form/input/Checkbox";
 import { resolveImageUrl } from "../../../services/api";
+import { generateSku } from "../../../utils/sku";
 import type { Product, ProductCreate, ProductUpdate, Category, Supplier } from "../../../types";
 
 interface ProductFormSubmitPayload {
@@ -45,6 +46,7 @@ export default function ProductForm({
   const [categoryId, setCategoryId] = useState("");
   const [supplierId, setSupplierId] = useState("");
   const [isActive, setIsActive] = useState(true);
+  const [skuManuallyEdited, setSkuManuallyEdited] = useState(false);
 
   // Image state:
   // - pendingImageFile: a File the user just selected (preview shown locally)
@@ -60,7 +62,7 @@ export default function ProductForm({
   useEffect(() => {
     if (product) {
       setName(product.name);
-      setSku(product.sku ?? "");
+      setSku(product.sku);
       setBarcode(product.barcode ?? "");
       setDescription(product.description ?? "");
       setUnitPrice(String(product.unit_price));
@@ -68,6 +70,7 @@ export default function ProductForm({
       setCategoryId(String(product.category_id));
       setSupplierId(product.supplier_id ? String(product.supplier_id) : "");
       setIsActive(product.is_active);
+      setSkuManuallyEdited(true);
     } else {
       setName("");
       setSku("");
@@ -78,6 +81,7 @@ export default function ProductForm({
       setCategoryId("");
       setSupplierId("");
       setIsActive(true);
+      setSkuManuallyEdited(false);
     }
     // Reset image state whenever the form opens/changes target product.
     setPendingImageFile(null);
@@ -92,6 +96,20 @@ export default function ProductForm({
       if (previewUrl) URL.revokeObjectURL(previewUrl);
     };
   }, [previewUrl]);
+
+  // Auto-generate SKU when name or category changes (only in create mode or if user hasn't manually edited).
+  const getCategoryName = useCallback(
+    (catId: string) => categories.find((c) => String(c.id) === catId)?.name ?? "",
+    [categories],
+  );
+
+  useEffect(() => {
+    if (skuManuallyEdited || isEditing) return;
+    if (!name || !categoryId) return;
+    const catName = getCategoryName(categoryId);
+    if (!catName) return;
+    setSku(generateSku(catName, name));
+  }, [name, categoryId, skuManuallyEdited, isEditing, getCategoryName]);
 
   const handleSelectFile = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -122,7 +140,7 @@ export default function ProductForm({
 
     const payload = {
       name,
-      sku: sku || "",
+      sku,
       barcode: barcode || undefined,
       description: description || undefined,
       unit_price: parseFloat(unitPrice),
@@ -256,14 +274,25 @@ export default function ProductForm({
               />
             </div>
             <div>
-              <Label>SKU</Label>
+              <Label>
+                SKU <span className="text-error-500">*</span>
+              </Label>
               <Input
                 type="text"
-                placeholder="Ej: HELM-001"
+                placeholder={sku && !skuManuallyEdited ? sku : "Ej: HELM-001"}
                 value={sku}
-                onChange={(e) => setSku(e.target.value)}
+                onChange={(e) => {
+                  setSku(e.target.value);
+                  setSkuManuallyEdited(true);
+                }}
+                required
                 disabled={loading}
               />
+              {sku && !skuManuallyEdited && !isEditing && (
+                <p className="mt-1 text-xs text-gray-400 dark:text-gray-500">
+                  Auto-generado. Haz clic para editar.
+                </p>
+              )}
             </div>
           </div>
 
@@ -361,7 +390,7 @@ export default function ProductForm({
             type="submit"
             variant="primary"
             size="sm"
-            disabled={loading || !name || !unitPrice || !categoryId}
+            disabled={loading || !name || !unitPrice || !categoryId || !sku}
           >
             {loading ? (
               <span className="flex items-center justify-center gap-2">

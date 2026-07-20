@@ -58,7 +58,9 @@ export function getProductColumns(
       key: "sku",
       header: "SKU",
       sortable: true,
-      render: (item: Product) => item.sku || "—",
+      render: (item: Product) => (
+        <span className="font-mono text-xs">{item.sku}</span>
+      ),
     },
     {
       key: "barcode",

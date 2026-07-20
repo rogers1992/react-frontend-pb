@@ -170,7 +170,7 @@ export interface UserToggleActive {
 export interface Product {
   id: number;
   name: string;
-  sku?: string;
+  sku: string;
   barcode?: string;
   description?: string;
   unit_price: number;
@@ -189,7 +189,7 @@ export interface Product {
 
 export interface ProductCreate {
   name: string;
-  sku?: string;
+  sku: string;
   barcode?: string;
   description?: string;
   unit_price: number;
