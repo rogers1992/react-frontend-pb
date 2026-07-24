@@ -1,4 +1,4 @@
-import { useMemo } from "react";
+import { useMemo, useState, useEffect } from "react";
 import type { Supplier, Warehouse, Product } from "../../../types";
 import { resolveImageUrl } from "../../../services/api";
 import { TrashBinIcon, PlusIcon } from "../../../icons";
@@ -142,7 +142,9 @@ export default function PurchaseCartSummary({
               <PurchaseCartItemRow
                 key={item.product.id}
                 item={item}
-                onUpdate={(qty, cost) => onUpdateCart(item.product.id, qty, cost)}
+                onUpdate={(qty, cost) =>
+                  onUpdateCart(item.product.id, qty, cost)
+                }
                 onRemove={() => onRemoveFromCart(item.product.id)}
               />
             ))}
@@ -157,13 +159,21 @@ export default function PurchaseCartSummary({
           <span>Bs{total.toFixed(2)}</span>
         </div>
         <p className="text-xs text-gray-400">
-          La orden se creará con estado <span className="font-medium text-warning-600">Pendiente</span>. El inventario se actualizará al recibir.
+          La orden se creará con estado{" "}
+          <span className="font-medium text-warning-600">Pendiente</span>. El
+          inventario se actualizará al recibir.
         </p>
       </div>
 
       {/* Actions */}
       <div className="flex gap-3">
-        <Button variant="outline" size="sm" className="flex-1" onClick={onCancel} disabled={submitting}>
+        <Button
+          variant="outline"
+          size="sm"
+          className="flex-1"
+          onClick={onCancel}
+          disabled={submitting}
+        >
           Cancelar
         </Button>
         <Button
@@ -171,13 +181,25 @@ export default function PurchaseCartSummary({
           size="sm"
           className="flex-1"
           onClick={onConfirm}
-          disabled={cart.length === 0 || !selectedWarehouse || submitting}
+          disabled={cart.length === 0 || !selectedWarehouse || !selectedSupplier || submitting}
         >
           {submitting ? (
             <span className="flex items-center justify-center gap-2">
               <svg className="animate-spin h-4 w-4" viewBox="0 0 24 24">
-                <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" fill="none" />
-                <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
+                <circle
+                  className="opacity-25"
+                  cx="12"
+                  cy="12"
+                  r="10"
+                  stroke="currentColor"
+                  strokeWidth="4"
+                  fill="none"
+                />
+                <path
+                  className="opacity-75"
+                  fill="currentColor"
+                  d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
+                />
               </svg>
               Procesando...
             </span>
@@ -196,7 +218,11 @@ interface PurchaseCartItemRowProps {
   onRemove: () => void;
 }
 
-function PurchaseCartItemRow({ item, onUpdate, onRemove }: PurchaseCartItemRowProps) {
+function PurchaseCartItemRow({
+  item,
+  onUpdate,
+  onRemove,
+}: PurchaseCartItemRowProps) {
   const url = resolveImageUrl(item.product.image_url);
   const cost =
     typeof item.unit_cost === "number"
@@ -204,18 +230,32 @@ function PurchaseCartItemRow({ item, onUpdate, onRemove }: PurchaseCartItemRowPr
       : parseFloat(item.unit_cost as unknown as string);
   const lineTotal = cost * item.quantity;
 
+  const [inputValue, setInputValue] = useState(String(item.quantity));
+
+  useEffect(() => {
+    setInputValue(String(item.quantity));
+  }, [item.quantity]);
+
   const handleQuantityChange = (delta: number) => {
     const newQty = Math.max(1, item.quantity + delta);
     onUpdate(newQty, cost);
   };
 
-  const handleQuantityDirectChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const val = parseInt(e.target.value, 10);
+  const handleQuantityDirectChange = (
+    e: React.ChangeEvent<HTMLInputElement>,
+  ) => {
+    const raw = e.target.value.replace(/[^0-9]/g, "");
+    setInputValue(raw);
+  };
+
+  const commitQuantity = () => {
+    const val = parseInt(inputValue, 10);
     if (isNaN(val) || val < 1) {
       onUpdate(1, cost);
-      return;
+      setInputValue("1");
+    } else {
+      onUpdate(Math.floor(val), cost);
     }
-    onUpdate(Math.floor(val), cost);
   };
 
   const handleCostChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -261,26 +301,37 @@ function PurchaseCartItemRow({ item, onUpdate, onRemove }: PurchaseCartItemRowPr
       </div>
 
       {/* Bottom row: quantity controls, unit cost */}
-      <div className="flex items-center gap-4 pl-[52px]">
+      <div className="flex items-center gap-3">
         <div className="flex items-center gap-2">
-          <span className="text-xs text-gray-500 dark:text-gray-400">Cantidad</span>
+          <span className="text-xs text-gray-500 dark:text-gray-400">
+            Cantidad
+          </span>
           <div className="flex items-center gap-1">
             <button
               onClick={() => handleQuantityChange(-1)}
               disabled={item.quantity <= 1}
               className="h-7 w-7 rounded-md border border-gray-300 flex items-center justify-center text-gray-500 hover:bg-gray-100 disabled:opacity-40 dark:border-gray-600 dark:text-gray-400 dark:hover:bg-gray-700 transition"
             >
-              <svg className="size-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round">
+              <svg
+                className="size-3.5"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="2.5"
+                strokeLinecap="round"
+              >
                 <path d="M5 12h14" />
               </svg>
             </button>
             <input
-              type="number"
-              min="1"
-              step="1"
+              type="text"
               inputMode="numeric"
-              value={item.quantity}
+              value={inputValue}
               onChange={handleQuantityDirectChange}
+              onBlur={commitQuantity}
+              onKeyDown={(e) => {
+                if (e.key === "Enter") commitQuantity();
+              }}
               className="w-12 h-7 rounded-md border border-gray-300 text-center text-sm font-medium text-gray-800 dark:bg-gray-800 dark:border-gray-600 dark:text-white/90 focus:border-brand-300 focus:outline-hidden focus:ring-2 focus:ring-brand-500/20"
             />
             <button
@@ -292,7 +343,9 @@ function PurchaseCartItemRow({ item, onUpdate, onRemove }: PurchaseCartItemRowPr
           </div>
         </div>
         <div className="flex items-center gap-1">
-          <span className="text-xs text-gray-500 dark:text-gray-400">Costo</span>
+          <span className="text-xs text-gray-500 dark:text-gray-400">
+            Costo
+          </span>
           <span className="text-xs text-gray-400">Bs</span>
           <input
             type="number"

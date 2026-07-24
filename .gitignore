@@ -16,3 +16,4 @@ dist/
 build/
 skills-lock.json
 .playwright-mcp/
+.vscode/

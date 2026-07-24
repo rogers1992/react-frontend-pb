@@ -38,7 +38,7 @@ export default function DatePicker({
     if (!inputRef.current) return;
     const fp = flatpickr(inputRef.current, {
       mode: mode || "single",
-      static: true,
+      //static: window.innerWidth >= 640,
       monthSelectorType: "static",
       dateFormat: "Y-m-d",
       defaultDate: value ?? defaultDate,

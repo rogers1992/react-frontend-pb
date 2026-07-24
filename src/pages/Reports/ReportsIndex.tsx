@@ -122,8 +122,11 @@ export default function ReportsIndex() {
 
   useEffect(() => {
     setStatusFilter("");
+  }, [activeTab]);
+
+  useEffect(() => {
     fetchData();
-  }, [activeTab, fetchData]);
+  }, [fetchData]);
 
   const handleExport = async () => {
     try {

@@ -109,8 +109,12 @@ export default function PurchasePOS() {
       showToast({ type: "error", message: "Selecciona un almacén." });
       return;
     }
+    if (!selectedSupplier) {
+      showToast({ type: "error", message: "Selecciona un proveedor." });
+      return;
+    }
     setShowReview(true);
-  }, [cart.length, selectedWarehouse, showToast]);
+  }, [cart.length, selectedWarehouse, selectedSupplier, showToast]);
 
   const confirmPurchase = useCallback(async () => {
     setShowReview(false);

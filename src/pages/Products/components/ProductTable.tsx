@@ -8,7 +8,7 @@ function ProductThumbnail({ product }: { product: Product }) {
   const url = resolveImageUrl(product.image_url);
   if (url) {
     return (
-      <div className="w-20 h-20 overflow-hidden border border-gray-200 rounded-full dark:border-gray-800">
+      <div className="w-20 h-20 overflow-hidden border border-gray-200 rounded-lg dark:border-gray-800">
         <img
           src={url}
           alt={product.name}
