@@ -1,11 +1,15 @@
 import api from './api';
 import type {
+  ABCReportRow,
   CustomerReportRow,
   InventoryReportRow,
   ProductReportRow,
+  ProfitReportRow,
   PurchaseReportRow,
   ReportType,
   SalesReportRow,
+  SellerReportRow,
+  SlowMovingReportRow,
 } from '../types';
 import { AxiosError } from 'axios';
 
@@ -27,12 +31,18 @@ export interface ProductReportFilters {
   to?: string;
 }
 
+export interface DateRangeFilters {
+  from?: string;
+  to?: string;
+}
+
 export interface ExportParams {
   from?: string;
   to?: string;
   seller_id?: number;
   customer_id?: number;
   status?: string;
+  threshold_days?: number;
 }
 
 /**
@@ -97,6 +107,43 @@ export const reportsService = {
     filters: ProductReportFilters = {},
   ): Promise<ProductReportRow[]> => {
     const response = await api.get<ProductReportRow[]>('/reports/products', {
+      params: filters,
+    });
+    return response.data;
+  },
+
+  getProfit: async (
+    filters: DateRangeFilters = {},
+  ): Promise<ProfitReportRow[]> => {
+    const response = await api.get<ProfitReportRow[]>('/reports/profit', {
+      params: filters,
+    });
+    return response.data;
+  },
+
+  getABC: async (
+    filters: DateRangeFilters = {},
+  ): Promise<ABCReportRow[]> => {
+    const response = await api.get<ABCReportRow[]>('/reports/abc', {
+      params: filters,
+    });
+    return response.data;
+  },
+
+  getSlowMoving: async (
+    thresholdDays: number = 90,
+  ): Promise<SlowMovingReportRow[]> => {
+    const response = await api.get<SlowMovingReportRow[]>(
+      '/reports/slow-moving',
+      { params: { threshold_days: thresholdDays } },
+    );
+    return response.data;
+  },
+
+  getSellers: async (
+    filters: DateRangeFilters = {},
+  ): Promise<SellerReportRow[]> => {
+    const response = await api.get<SellerReportRow[]>('/reports/sellers', {
       params: filters,
     });
     return response.data;

@@ -9,14 +9,16 @@ import Badge from "../../components/ui/badge/Badge";
 import Input from "../../components/form/input/InputField";
 import Label from "../../components/form/Label";
 import Select from "../../components/form/Select";
+import MultiSelect from "../../components/form/MultiSelect";
 import { PlusIcon, PencilIcon } from "../../icons";
 import { useToast } from "../../context/ToastContext";
 import { useAuth } from "../../context/AuthContext";
 import { usePermissions } from "../../hooks/usePermissions";
 import { userService } from "../../services/user.service";
 import { roleService } from "../../services/role.service";
+import { warehouseService } from "../../services/warehouse.service";
 import { getErrorMessage } from "../../utils/error";
-import type { UserWithRole, UserCreate, UserUpdate, Role } from "../../types";
+import type { UserWithRole, UserCreate, UserUpdate, Role, Warehouse } from "../../types";
 
 export default function UserIndex() {
   const { showToast } = useToast();
@@ -41,6 +43,8 @@ export default function UserIndex() {
   const [phone, setPhone] = useState("");
   const [password, setPassword] = useState("");
   const [roleId, setRoleId] = useState("");
+  const [warehouses, setWarehouses] = useState<Warehouse[]>([]);
+  const [selectedWarehouseIds, setSelectedWarehouseIds] = useState<number[]>([]);
 
   const [toggleTarget, setToggleTarget] = useState<UserWithRole | null>(null);
   const [toggleLoading, setToggleLoading] = useState(false);
@@ -49,12 +53,18 @@ export default function UserIndex() {
   const [newPassword, setNewPassword] = useState("");
   const [resetLoading, setResetLoading] = useState(false);
 
+  const roleHasSalesPermission = (rId: string): boolean => {
+    const role = roles.find((r) => r.id === parseInt(rId));
+    return !!(role?.permissions?.sales?.length);
+  };
+
   const fetchData = useCallback(async () => {
     try {
       setLoading(true);
-      const [usersRes, rolesRes] = await Promise.allSettled([
+      const [usersRes, rolesRes, warehousesRes] = await Promise.allSettled([
         userService.getAll(0, 500, searchQuery || undefined),
         roleService.getAll(),
+        warehouseService.getAll(0, 500),
       ]);
       if (usersRes.status === "fulfilled") {
         setUsers(usersRes.value);
@@ -69,6 +79,9 @@ export default function UserIndex() {
       }
       if (rolesRes.status === "fulfilled") {
         setRoles(rolesRes.value);
+      }
+      if (warehousesRes.status === "fulfilled") {
+        setWarehouses(warehousesRes.value.filter((w) => w.is_active));
       }
     } finally {
       setLoading(false);
@@ -87,6 +100,7 @@ export default function UserIndex() {
     setPhone("");
     setPassword("");
     setRoleId("");
+    setSelectedWarehouseIds([]);
     setSelectedUser(null);
   };
 
@@ -104,6 +118,7 @@ export default function UserIndex() {
     setPhone(u.phone ?? "");
     setPassword("");
     setRoleId(String(u.role_id));
+    setSelectedWarehouseIds(u.warehouse_ids || []);
     setIsFormOpen(true);
   };
 
@@ -125,6 +140,9 @@ export default function UserIndex() {
           phone: phone || undefined,
           role_id: parseInt(roleId),
         };
+        if (roleHasSalesPermission(roleId)) {
+          payload.warehouse_ids = selectedWarehouseIds;
+        }
         await userService.update(selectedUser.id, payload);
         showToast({
           type: "success",
@@ -140,6 +158,9 @@ export default function UserIndex() {
           password,
           role_id: parseInt(roleId),
         };
+        if (roleHasSalesPermission(roleId) && selectedWarehouseIds.length > 0) {
+          payload.warehouse_ids = selectedWarehouseIds;
+        }
         await userService.create(payload);
         showToast({
           type: "success",
@@ -225,6 +246,11 @@ export default function UserIndex() {
   const roleOptions = roleSource.map((r) => ({
     value: String(r.id),
     label: r.name,
+  }));
+
+  const warehouseOptions = warehouses.map((w) => ({
+    value: String(w.id),
+    text: w.name,
   }));
 
   const formatDate = (iso?: string) => {
@@ -498,6 +524,20 @@ export default function UserIndex() {
                 />
               </div>
             </div>
+
+            {roleHasSalesPermission(roleId) && (
+              <div>
+                <MultiSelect
+                  label="Almacenes"
+                  options={warehouseOptions}
+                  value={selectedWarehouseIds.map((id) => String(id))}
+                  onChange={(values) =>
+                    setSelectedWarehouseIds(values.map((v) => parseInt(v)))
+                  }
+                  placeholder="Seleccionar almacenes"
+                />
+              </div>
+            )}
 
             {!selectedUser && (
               <div>

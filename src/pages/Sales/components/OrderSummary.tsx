@@ -19,6 +19,7 @@ interface OrderSummaryProps {
   paymentMethod: string;
   submitting: boolean;
   warehouseInventory: Map<number, number>;
+  hasNoWarehouses?: boolean;
   onSelectCustomer: (c: Customer | null) => void;
   onSelectWarehouse: (w: Warehouse | null) => void;
   onUpdateCart: (productId: number, quantity: number, discount: number) => void;
@@ -37,6 +38,7 @@ export default function OrderSummary({
   paymentMethod,
   submitting,
   warehouseInventory,
+  hasNoWarehouses = false,
   onSelectCustomer,
   onSelectWarehouse,
   onUpdateCart,
@@ -80,6 +82,11 @@ export default function OrderSummary({
             </option>
           ))}
         </select>
+        {hasNoWarehouses && (
+          <p className="mt-1 text-xs text-error-500">
+            No tienes almacenes asignados. Contacta al administrador.
+          </p>
+        )}
       </div>
 
       {/* Customer selector */}

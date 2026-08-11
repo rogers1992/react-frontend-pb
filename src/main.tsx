@@ -14,16 +14,16 @@ import ToastContainer from "./components/common/Toast.tsx";
 createRoot(document.getElementById("root")!).render(
   <StrictMode>
     <ThemeProvider>
-      <AuthProvider>
-        <NotificationProvider>
-          <ToastProvider>
-            <AppWrapper>
+      <ToastProvider>
+        <AppWrapper>
+          <AuthProvider>
+            <NotificationProvider>
               <App />
               <ToastContainer />
-            </AppWrapper>
-          </ToastProvider>
-        </NotificationProvider>
-      </AuthProvider>
+            </NotificationProvider>
+          </AuthProvider>
+        </AppWrapper>
+      </ToastProvider>
     </ThemeProvider>
   </StrictMode>
 );

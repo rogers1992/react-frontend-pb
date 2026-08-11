@@ -2,6 +2,7 @@ import { useState, useEffect, useCallback, useMemo } from "react";
 import PageMeta from "../../components/common/PageMeta";
 import PageBreadcrumb from "../../components/common/PageBreadCrumb";
 import { useToast } from "../../context/ToastContext";
+import { useAuth } from "../../context/AuthContext";
 import { productService } from "../../services/product.service";
 import { categoryService } from "../../services/category.service";
 import { customerService } from "../../services/customer.service";
@@ -14,6 +15,7 @@ import ProductGrid from "./components/ProductGrid";
 import OrderSummary from "./components/OrderSummary";
 import ReceiptModal from "./components/ReceiptModal";
 import SaleReviewModal from "./components/SaleReviewModal";
+import ProductDetailModal from "./components/ProductDetailModal";
 
 interface CartItem {
   product: Product;
@@ -23,6 +25,7 @@ interface CartItem {
 
 export default function SalesIndex() {
   const { showToast } = useToast();
+  const { user } = useAuth();
 
   const [products, setProducts] = useState<Product[]>([]);
   const [categories, setCategories] = useState<Category[]>([]);
@@ -40,6 +43,8 @@ export default function SalesIndex() {
   const [submitting, setSubmitting] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedCategory, setSelectedCategory] = useState<number | "all">("all");
+  const [selectedProduct, setSelectedProduct] = useState<Product | null>(null);
+  const [showProductDetail, setShowProductDetail] = useState(false);
 
   const fetchData = useCallback(async () => {
     try {
@@ -52,17 +57,23 @@ export default function SalesIndex() {
       setProducts(productsData.items);
       setCategories(categoriesData);
       setCustomers(customersData.items);
-      setWarehouses(warehousesData);
 
-      // Auto-select first warehouse
-      if (warehousesData.length > 0) {
-        setSelectedWarehouse(warehousesData[0]);
+      // Filter warehouses by user's assigned warehouses
+      const userWarehouseIds = user?.warehouse_ids;
+      const userWarehouses = userWarehouseIds && userWarehouseIds.length > 0
+        ? warehousesData.filter((w) => userWarehouseIds.includes(w.id))
+        : [];
+      setWarehouses(userWarehouses);
+
+      // Auto-select first assigned warehouse
+      if (userWarehouses.length > 0) {
+        setSelectedWarehouse(userWarehouses[0]);
       }
     } catch (error) {
       const message = getErrorMessage(error, "Error al cargar los datos.");
       showToast({ type: "error", message });
     }
-  }, [showToast]);
+  }, [showToast, user]);
 
   useEffect(() => {
     fetchData();
@@ -84,17 +95,27 @@ export default function SalesIndex() {
     fetchInventory();
   }, [selectedWarehouse]);
 
-  const addToCart = useCallback((product: Product) => {
+  const addToCart = useCallback((product: Product, quantity: number = 1) => {
     setCart((prev) => {
       const existing = prev.find((i) => i.product.id === product.id);
       if (existing) {
         return prev.map((i) =>
-          i.product.id === product.id ? { ...i, quantity: i.quantity + 1 } : i
+          i.product.id === product.id ? { ...i, quantity: i.quantity + quantity } : i
         );
       }
-      return [...prev, { product, quantity: 1, discount: 0 }];
+      return [...prev, { product, quantity, discount: 0 }];
     });
   }, []);
+
+  const handleProductClick = useCallback((product: Product) => {
+    setSelectedProduct(product);
+    setShowProductDetail(true);
+  }, []);
+
+  const handleAddToCartFromModal = useCallback((product: Product, quantity: number) => {
+    addToCart(product, quantity);
+    showToast({ type: "success", message: `${quantity} x ${product.name} agregado al carrito.` });
+  }, [addToCart, showToast]);
 
   const updateCartItem = useCallback((productId: number, quantity: number, discount: number) => {
     setCart((prev) =>
@@ -166,6 +187,12 @@ export default function SalesIndex() {
     return "Cliente General";
   }, [selectedCustomer]);
 
+  const categoryMap = useMemo(() => {
+    const map = new Map<number, Category>();
+    categories.forEach((cat) => map.set(cat.id, cat));
+    return map;
+  }, [categories]);
+
   return (
     <>
       <PageMeta title="Ventas | Paraiso Biker" description="Punto de venta - Paraiso Biker" />
@@ -182,6 +209,7 @@ export default function SalesIndex() {
             selectedCategory={selectedCategory}
             onCategoryChange={setSelectedCategory}
             onAddToCart={addToCart}
+            onProductClick={handleProductClick}
           />
         </div>
         <div className="xl:col-span-1">
@@ -201,6 +229,7 @@ export default function SalesIndex() {
             onPaymentMethodChange={setPaymentMethod}
             onConfirm={openReview}
             onCancel={handleCancel}
+            hasNoWarehouses={warehouses.length === 0}
           />
         </div>
       </div>
@@ -221,6 +250,15 @@ export default function SalesIndex() {
         customerName={customerName}
         onClose={() => setShowReceipt(false)}
         onNewSale={handleNewSale}
+      />
+
+      <ProductDetailModal
+        isOpen={showProductDetail}
+        product={selectedProduct}
+        category={selectedProduct ? categoryMap.get(selectedProduct.category_id) : undefined}
+        stockQuantity={selectedProduct ? (warehouseInventory.get(selectedProduct.id) ?? 0) : 0}
+        onClose={() => setShowProductDetail(false)}
+        onAddToCart={handleAddToCartFromModal}
       />
     </>
   );

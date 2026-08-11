@@ -794,3 +794,25 @@ span.flatpickr-weekday,
 .simplebar-scrollbar.simplebar-visible:before {
   @apply opacity-100;
 }
+
+/* Fix flatpickr duplicate input on mobile */
+.flatpickr-mobile-input {
+  display: none !important;
+}
+
+/* Ensure calendar popup is visible on mobile */
+.flatpickr-calendar {
+  z-index: 9999 !important;
+}
+
+/* Fix calendar positioning on small screens */
+@media (max-width: 640px) {
+  .flatpickr-calendar {
+    position: fixed !important;
+    top: 50% !important;
+    left: 50% !important;
+    transform: translate(-50%, -50%) !important;
+    width: 90vw !important;
+    max-width: 320px !important;
+  }
+}

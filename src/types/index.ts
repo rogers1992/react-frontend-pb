@@ -92,6 +92,7 @@ export interface User extends UserBase {
   last_login?: string;
   created_at: string;
   updated_at?: string;
+  warehouse_ids?: number[];
 }
 
 /**
@@ -136,6 +137,7 @@ export interface UserCreate {
   phone?: string;
   password: string;
   role_id: number;
+  warehouse_ids?: number[];
 }
 
 /**
@@ -149,6 +151,7 @@ export interface UserUpdate {
   last_name?: string;
   phone?: string;
   role_id?: number;
+  warehouse_ids?: number[];
 }
 
 export interface UserPasswordReset {
@@ -162,6 +165,19 @@ export interface UserToggleActive {
 //=========================
 // PRODUCT TYPES
 //=========================
+
+/**
+ * Product image with all fields (returned from API)
+ */
+
+export interface ProductImage {
+  id: number;
+  product_id: number;
+  image_url: string;
+  is_primary: boolean;
+  sort_order: number;
+  created_at: string;
+}
 
 /**
  * Product with all fields (returned from API)
@@ -181,6 +197,8 @@ export interface Product {
   is_active: boolean;
   created_at: string;
   updated_at: string;
+  current_cost: number | null;
+  images?: ProductImage[];
 }
 
 /**
@@ -657,7 +675,11 @@ export type ReportType =
   | "inventory"
   | "purchases"
   | "customers"
-  | "products";
+  | "products"
+  | "profit"
+  | "abc"
+  | "slow-moving"
+  | "sellers";
 
 export interface SalesReportRow {
   sale_id: number;
@@ -689,6 +711,8 @@ export interface InventoryReportRow {
   max_stock_level: number | null;
   unit_price: number;
   stock_value: number;
+  unit_cost: number | null;
+  stock_value_at_cost: number | null;
   is_low_stock: boolean;
   is_out_of_stock: boolean;
 }
@@ -730,4 +754,49 @@ export interface ProductReportRow {
   units_sold: number;
   revenue: number;
   stock_quantity: number;
+}
+
+export interface ProfitReportRow {
+  product_id: number;
+  name: string;
+  sku: string | null;
+  units_sold: number;
+  revenue: number;
+  cogs: number;
+  gross_profit: number;
+  margin_pct: number;
+}
+
+export interface ABCReportRow {
+  product_id: number;
+  name: string;
+  sku: string | null;
+  revenue: number;
+  revenue_pct: number;
+  cumulative_pct: number;
+  abc_class: "A" | "B" | "C";
+  units_sold: number;
+}
+
+export interface SlowMovingReportRow {
+  product_id: number;
+  name: string;
+  sku: string | null;
+  category_name: string | null;
+  warehouse_name: string;
+  quantity: number;
+  last_sale_date: string | null;
+  days_since_last_sale: number | null;
+  stock_value: number;
+}
+
+export interface SellerReportRow {
+  seller_id: number;
+  seller_name: string;
+  role_name: string | null;
+  sales_count: number;
+  units_sold: number;
+  revenue: number;
+  avg_ticket: number;
+  tax_collected: number;
 }

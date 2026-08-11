@@ -85,6 +85,34 @@ export function getProductColumns(
       },
     },
     {
+      key: "current_cost",
+      header: "Costo Actual",
+      sortable: true,
+      render: (item: Product) => {
+        if (item.current_cost === null || item.current_cost === undefined) return "—";
+        const cost = typeof item.current_cost === "string" ? parseFloat(item.current_cost) : item.current_cost;
+        return `Bs${cost.toFixed(2)}`;
+      },
+    },
+    {
+      key: "margin",
+      header: "Margen %",
+      sortable: true,
+      render: (item: Product) => {
+        if (item.current_cost === null || item.current_cost === undefined || item.current_cost === 0) return "—";
+        const cost = typeof item.current_cost === "string" ? parseFloat(item.current_cost) : item.current_cost;
+        const price = typeof item.unit_price === "string" ? parseFloat(item.unit_price) : item.unit_price;
+        const margin = ((price - cost) / price) * 100;
+        const cls =
+          margin < 0
+            ? "text-error-600 dark:text-error-500"
+            : margin >= 30
+              ? "text-success-600 dark:text-success-500"
+              : "text-gray-600 dark:text-gray-400";
+        return <span className={cls}>{margin.toFixed(1)}%</span>;
+      },
+    },
+    {
       key: "is_active",
       header: "Estado",
       render: (item: Product) => (
@@ -98,7 +126,12 @@ export function getProductColumns(
       header: "",
       className: "w-24",
       render: (item: Product) => (
-        <ProductActions product={item} onEdit={onEdit} onDelete={onDelete} />
+        <ProductActions
+          product={item}
+          onEdit={onEdit}
+          onDelete={onDelete}
+          hideDelete={!item.is_active}
+        />
       ),
     },
   ];

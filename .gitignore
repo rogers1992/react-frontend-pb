@@ -17,3 +17,4 @@ build/
 skills-lock.json
 .playwright-mcp/
 .vscode/
+manual-screenshots/

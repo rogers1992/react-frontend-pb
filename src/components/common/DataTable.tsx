@@ -1,4 +1,4 @@
-import { useState, useMemo, type ReactNode } from "react";
+import { useState, useEffect, useMemo, type ReactNode } from "react";
 import {
   Table,
   TableBody,
@@ -88,6 +88,10 @@ export default function DataTable<T>({
     if (!serverSide) setLocalPage(0);
   };
 
+  useEffect(() => {
+    if (!serverSide) setLocalPage(0);
+  }, [searchValue, serverSide]);
+
   const sortedData = useMemo(() => {
     if (serverSide) return data;
     if (!sortKey || !sortDir) return data;
@@ -116,12 +120,24 @@ export default function DataTable<T>({
     });
   }, [data, sortKey, sortDir, serverSide]);
 
-  const displayTotal = serverSide ? (totalItems ?? 0) : sortedData.length;
+  const filteredData = useMemo(() => {
+    if (serverSide) return sortedData;
+    if (!searchValue) return sortedData;
+    const q = searchValue.toLowerCase();
+    return sortedData.filter((item) =>
+      columns.some((col) => {
+        const val = (item as unknown as Record<string, unknown>)[col.key];
+        return val != null && String(val).toLowerCase().includes(q);
+      }),
+    );
+  }, [sortedData, searchValue, columns, serverSide]);
+
+  const displayTotal = serverSide ? (totalItems ?? 0) : filteredData.length;
   const totalPages = Math.max(1, Math.ceil(displayTotal / effectivePageSize));
   const currentPageIndex = Math.min(effectivePage, totalPages - 1);
   const paginatedData = serverSide
-    ? sortedData
-    : sortedData.slice(
+    ? filteredData
+    : filteredData.slice(
         currentPageIndex * effectivePageSize,
         currentPageIndex * effectivePageSize + effectivePageSize,
       );

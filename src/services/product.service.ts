@@ -4,6 +4,7 @@ import type {
   ProductCreate,
   ProductUpdate,
   PaginationMeta,
+  ProductImage,
 } from "../types";
 
 /**
@@ -28,9 +29,14 @@ export const productService = {
    * const products = await productService.getAll(0, 50);
    * // Gets first 50 products
    */
-  getAll: async (skip = 0, limit = 10, search?: string): Promise<PaginationMeta<Product>> => {
+  getAll: async (
+    skip = 0,
+    limit = 10,
+    search?: string,
+    includeInactive?: boolean,
+  ): Promise<PaginationMeta<Product>> => {
     const response = await api.get<PaginationMeta<Product>>("/products", {
-      params: { skip, limit, search },
+      params: { skip, limit, search, include_inactive: includeInactive },
     });
     return response.data;
   },
@@ -133,6 +139,70 @@ export const productService = {
   removeImage: async (id: number): Promise<{ message: string }> => {
     const response = await api.delete<{ message: string }>(
       `/products/${id}/image`,
+    );
+    return response.data;
+  },
+
+  /**
+   * Get all images for a product
+   */
+  getImages: async (productId: number): Promise<ProductImage[]> => {
+    const response = await api.get<ProductImage[]>(`/products/${productId}/images`);
+    return response.data;
+  },
+
+  /**
+   * Upload a new image for a product
+   */
+  addImage: async (
+    productId: number,
+    file: File,
+    isPrimary: boolean = false,
+    sortOrder: number = 0,
+  ): Promise<ProductImage> => {
+    const formData = new FormData();
+    formData.append("file", file);
+    const response = await api.post<ProductImage>(
+      `/products/${productId}/images`,
+      formData,
+      {
+        headers: { "Content-Type": "multipart/form-data" },
+        params: { is_primary: isPrimary, sort_order: sortOrder },
+      },
+    );
+    return response.data;
+  },
+
+  /**
+   * Update product image metadata (primary flag, sort order)
+   */
+  updateImage: async (
+    productId: number,
+    imageId: number,
+    data: { isPrimary?: boolean; sortOrder?: number },
+  ): Promise<ProductImage> => {
+    const response = await api.put<ProductImage>(
+      `/products/${productId}/images/${imageId}`,
+      null,
+      {
+        params: {
+          is_primary: data.isPrimary,
+          sort_order: data.sortOrder,
+        },
+      },
+    );
+    return response.data;
+  },
+
+  /**
+   * Delete a specific product image
+   */
+  deleteImage: async (
+    productId: number,
+    imageId: number,
+  ): Promise<{ message: string }> => {
+    const response = await api.delete<{ message: string }>(
+      `/products/${productId}/images/${imageId}`,
     );
     return response.data;
   },

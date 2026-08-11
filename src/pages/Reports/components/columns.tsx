@@ -1,10 +1,14 @@
 import type { Column } from "../../../components/common/DataTable";
 import type {
+  ABCReportRow,
   CustomerReportRow,
   InventoryReportRow,
   ProductReportRow,
+  ProfitReportRow,
   PurchaseReportRow,
   SalesReportRow,
+  SellerReportRow,
+  SlowMovingReportRow,
 } from "../../../types";
 
 // --- Local formatters (matching the SalesTable / PurchaseHistory idiom) ---
@@ -251,6 +255,22 @@ export function getInventoryReportColumns(): Column<InventoryReportRow>[] {
       ),
     },
     {
+      key: "unit_cost",
+      header: "Costo Unit.",
+      sortable: true,
+      render: (r) => <span>{formatCurrency(r.unit_cost)}</span>,
+    },
+    {
+      key: "stock_value_at_cost",
+      header: "Valor al Costo",
+      sortable: true,
+      render: (r) => (
+        <span className="font-semibold text-gray-800 dark:text-white/90">
+          {formatCurrency(r.stock_value_at_cost)}
+        </span>
+      ),
+    },
+    {
       key: "is_low_stock",
       header: "Estado",
       sortable: false,
@@ -470,6 +490,307 @@ export function getProductsReportColumns(): Column<ProductReportRow>[] {
       header: "Stock",
       sortable: true,
       render: (r) => <span>{formatNumber(r.stock_quantity)}</span>,
+    },
+  ];
+}
+
+export function getProfitReportColumns(): Column<ProfitReportRow>[] {
+  return [
+    {
+      key: "product_id",
+      header: "ID",
+      sortable: true,
+      render: (r) => (
+        <span className="font-medium text-gray-800 dark:text-white/90">
+          #{r.product_id}
+        </span>
+      ),
+    },
+    {
+      key: "name",
+      header: "Producto",
+      sortable: true,
+      render: (r) => (
+        <span className="font-medium text-gray-800 dark:text-white/90">
+          {r.name}
+        </span>
+      ),
+    },
+    { key: "sku", header: "SKU", sortable: true, render: (r) => r.sku ?? "—" },
+    {
+      key: "units_sold",
+      header: "Unidades",
+      sortable: true,
+      render: (r) => <span>{formatNumber(r.units_sold)}</span>,
+    },
+    {
+      key: "revenue",
+      header: "Ingresos",
+      sortable: true,
+      render: (r) => <span>{formatCurrency(r.revenue)}</span>,
+    },
+    {
+      key: "cogs",
+      header: "Costo (COGS)",
+      sortable: true,
+      render: (r) => <span>{formatCurrency(r.cogs)}</span>,
+    },
+    {
+      key: "gross_profit",
+      header: "Ganancia Bruta",
+      sortable: true,
+      render: (r) => (
+        <span
+          className={
+            r.gross_profit < 0
+              ? "text-error-600 dark:text-error-500"
+              : "text-success-600 dark:text-success-500"
+          }
+        >
+          {formatCurrency(r.gross_profit)}
+        </span>
+      ),
+    },
+    {
+      key: "margin_pct",
+      header: "Margen %",
+      sortable: true,
+      render: (r) => {
+        const cls =
+          r.margin_pct < 0
+            ? "bg-error-50 text-error-600 dark:bg-error-500/15 dark:text-error-500"
+            : r.margin_pct >= 30
+              ? "bg-success-50 text-success-600 dark:bg-success-500/15 dark:text-success-500"
+              : "bg-gray-100 text-gray-700 dark:bg-gray-700 dark:text-gray-300";
+        return (
+          <span
+            className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium ${cls}`}
+          >
+            {Number(r.margin_pct).toFixed(1)}%
+          </span>
+        );
+      },
+    },
+  ];
+}
+
+export function getABCReportColumns(): Column<ABCReportRow>[] {
+  const classStyles: Record<"A" | "B" | "C", string> = {
+    A: "bg-success-50 text-success-600 dark:bg-success-500/15 dark:text-success-500",
+    B: "bg-warning-50 text-warning-600 dark:bg-warning-500/15 dark:text-warning-500",
+    C: "bg-gray-100 text-gray-600 dark:bg-gray-700 dark:text-gray-300",
+  };
+  return [
+    {
+      key: "product_id",
+      header: "ID",
+      sortable: true,
+      render: (r) => (
+        <span className="font-medium text-gray-800 dark:text-white/90">
+          #{r.product_id}
+        </span>
+      ),
+    },
+    {
+      key: "name",
+      header: "Producto",
+      sortable: true,
+      render: (r) => (
+        <span className="font-medium text-gray-800 dark:text-white/90">
+          {r.name}
+        </span>
+      ),
+    },
+    { key: "sku", header: "SKU", sortable: true, render: (r) => r.sku ?? "—" },
+    {
+      key: "revenue",
+      header: "Ingresos",
+      sortable: true,
+      render: (r) => (
+        <span className="font-semibold text-gray-800 dark:text-white/90">
+          {formatCurrency(r.revenue)}
+        </span>
+      ),
+    },
+    {
+      key: "revenue_pct",
+      header: "% Ingresos",
+      sortable: true,
+      render: (r) => <span>{Number(r.revenue_pct).toFixed(1)}%</span>,
+    },
+    {
+      key: "cumulative_pct",
+      header: "% Acumulado",
+      sortable: true,
+      render: (r) => <span>{Number(r.cumulative_pct).toFixed(1)}%</span>,
+    },
+    {
+      key: "abc_class",
+      header: "Clase",
+      sortable: true,
+      render: (r) => (
+        <span
+          className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-semibold ${classStyles[r.abc_class]}`}
+        >
+          {r.abc_class}
+        </span>
+      ),
+    },
+    {
+      key: "units_sold",
+      header: "Unidades",
+      sortable: true,
+      render: (r) => <span>{formatNumber(r.units_sold)}</span>,
+    },
+  ];
+}
+
+export function getSlowMovingReportColumns(): Column<SlowMovingReportRow>[] {
+  return [
+    {
+      key: "product_id",
+      header: "ID",
+      sortable: true,
+      render: (r) => (
+        <span className="font-medium text-gray-800 dark:text-white/90">
+          #{r.product_id}
+        </span>
+      ),
+    },
+    {
+      key: "name",
+      header: "Producto",
+      sortable: true,
+      render: (r) => (
+        <span className="font-medium text-gray-800 dark:text-white/90">
+          {r.name}
+        </span>
+      ),
+    },
+    { key: "sku", header: "SKU", sortable: true, render: (r) => r.sku ?? "—" },
+    {
+      key: "category_name",
+      header: "Categoría",
+      sortable: true,
+      render: (r) => r.category_name ?? "—",
+    },
+    {
+      key: "warehouse_name",
+      header: "Almacén",
+      sortable: true,
+      render: (r) => r.warehouse_name,
+    },
+    {
+      key: "quantity",
+      header: "Cantidad",
+      sortable: true,
+      render: (r) => <span>{formatNumber(r.quantity)}</span>,
+    },
+    {
+      key: "last_sale_date",
+      header: "Última Venta",
+      sortable: true,
+      render: (r) => <span>{formatDateOnly(r.last_sale_date)}</span>,
+    },
+    {
+      key: "days_since_last_sale",
+      header: "Días Sin Vender",
+      sortable: true,
+      render: (r) => {
+        if (r.days_since_last_sale === null || r.days_since_last_sale === undefined) {
+          return (
+            <span className="inline-flex items-center rounded-full bg-error-50 px-2.5 py-0.5 text-xs font-medium text-error-600 dark:bg-error-500/15 dark:text-error-500">
+              Sin ventas
+            </span>
+          );
+        }
+        const cls =
+          r.days_since_last_sale >= 180
+            ? "bg-error-50 text-error-600 dark:bg-error-500/15 dark:text-error-500"
+            : "bg-warning-50 text-warning-600 dark:bg-warning-500/15 dark:text-warning-500";
+        return (
+          <span
+            className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium ${cls}`}
+          >
+            {formatNumber(r.days_since_last_sale)}
+          </span>
+        );
+      },
+    },
+    {
+      key: "stock_value",
+      header: "Valor",
+      sortable: true,
+      render: (r) => (
+        <span className="font-semibold text-gray-800 dark:text-white/90">
+          {formatCurrency(r.stock_value)}
+        </span>
+      ),
+    },
+  ];
+}
+
+export function getSellersReportColumns(): Column<SellerReportRow>[] {
+  return [
+    {
+      key: "seller_id",
+      header: "ID",
+      sortable: true,
+      render: (r) => (
+        <span className="font-medium text-gray-800 dark:text-white/90">
+          #{r.seller_id}
+        </span>
+      ),
+    },
+    {
+      key: "seller_name",
+      header: "Vendedor",
+      sortable: true,
+      render: (r) => (
+        <span className="font-medium text-gray-800 dark:text-white/90">
+          {r.seller_name}
+        </span>
+      ),
+    },
+    {
+      key: "role_name",
+      header: "Rol",
+      sortable: false,
+      render: (r) => r.role_name ?? "—",
+    },
+    {
+      key: "sales_count",
+      header: "# Ventas",
+      sortable: true,
+      render: (r) => <span>{formatNumber(r.sales_count)}</span>,
+    },
+    {
+      key: "units_sold",
+      header: "Unidades",
+      sortable: true,
+      render: (r) => <span>{formatNumber(r.units_sold)}</span>,
+    },
+    {
+      key: "revenue",
+      header: "Ingresos",
+      sortable: true,
+      render: (r) => (
+        <span className="font-semibold text-gray-800 dark:text-white/90">
+          {formatCurrency(r.revenue)}
+        </span>
+      ),
+    },
+    {
+      key: "avg_ticket",
+      header: "Ticket Prom.",
+      sortable: true,
+      render: (r) => <span>{formatCurrency(r.avg_ticket)}</span>,
+    },
+    {
+      key: "tax_collected",
+      header: "IVA Recaudado",
+      sortable: true,
+      render: (r) => <span>{formatCurrency(r.tax_collected)}</span>,
     },
   ];
 }

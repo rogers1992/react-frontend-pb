@@ -12,6 +12,7 @@ interface ProductGridProps {
   selectedCategory: number | "all";
   onCategoryChange: (cat: number | "all") => void;
   onAddToCart: (product: Product) => void;
+  onProductClick: (product: Product) => void;
 }
 
 export default function ProductGrid({
@@ -23,6 +24,7 @@ export default function ProductGrid({
   selectedCategory,
   onCategoryChange,
   onAddToCart,
+  onProductClick,
 }: ProductGridProps) {
   const filtered = useMemo(() => {
     return products.filter((p) => {
@@ -36,6 +38,12 @@ export default function ProductGrid({
       return matchesSearch && matchesCategory;
     });
   }, [products, searchQuery, selectedCategory]);
+
+  const categoryMap = useMemo(() => {
+    const map = new Map<number, Category>();
+    categories.forEach((cat) => map.set(cat.id, cat));
+    return map;
+  }, [categories]);
 
   return (
     <div className="space-y-4">
@@ -94,8 +102,10 @@ export default function ProductGrid({
             <ProductCard
               key={product.id}
               product={product}
+              category={categoryMap.get(product.category_id)}
               stockQuantity={warehouseInventory.get(product.id) ?? 0}
               onAdd={() => onAddToCart(product)}
+              onClick={() => onProductClick(product)}
             />
           ))}
         </div>
