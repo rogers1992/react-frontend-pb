@@ -3,6 +3,7 @@ import type { Customer, Warehouse, Product } from "../../../types";
 import CartItemRow from "./CartItemRow";
 import PaymentMethodSelector from "./PaymentMethodSelector";
 import Button from "../../../components/ui/button/Button";
+import { TAX_RATE, formatTaxLabel } from "../../../utils/tax";
 
 interface CartItem {
   product: Product;
@@ -52,7 +53,7 @@ export default function OrderSummary({
       const price = typeof item.product.unit_price === "string" ? parseFloat(item.product.unit_price) : item.product.unit_price;
       return sum + price * item.quantity - (item.discount || 0);
     }, 0);
-    const iva = subtotal * 0.16;
+    const iva = subtotal * TAX_RATE;
     return { subtotal, iva, total: subtotal + iva };
   }, [cart]);
 
@@ -173,7 +174,7 @@ export default function OrderSummary({
           <span>Bs{totals.subtotal.toFixed(2)}</span>
         </div>
         <div className="flex justify-between text-sm text-gray-500 dark:text-gray-400">
-          <span>IVA (16%)</span>
+          <span>{formatTaxLabel()}</span>
           <span>Bs{totals.iva.toFixed(2)}</span>
         </div>
         <div className="flex justify-between text-xl font-bold text-gray-800 dark:text-white/90 pt-2 border-t border-gray-200 dark:border-gray-700">

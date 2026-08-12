@@ -2,6 +2,7 @@ import { Modal } from "../../../components/ui/modal";
 import Button from "../../../components/ui/button/Button";
 import { CloseIcon } from "../../../icons";
 import type { Sale } from "../../../types";
+import { formatTaxLabel } from "../../../utils/tax";
 
 interface SaleDetailModalProps {
   isOpen: boolean;
@@ -144,7 +145,7 @@ export default function SaleDetailModal({ isOpen, sale, customerName, sellerName
           <span>Bs{subtotal.toFixed(2)}</span>
         </div>
         <div className="flex justify-between text-sm text-gray-500 dark:text-gray-400">
-          <span>IVA (16%)</span>
+          <span>{formatTaxLabel()}</span>
           <span>Bs{tax.toFixed(2)}</span>
         </div>
         <div className="flex justify-between text-lg font-bold text-gray-800 dark:text-white/90 pt-2 border-t border-gray-200 dark:border-gray-700">

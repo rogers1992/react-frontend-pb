@@ -2,6 +2,7 @@ import { Modal } from "../../../components/ui/modal";
 import Button from "../../../components/ui/button/Button";
 import { resolveImageUrl } from "../../../services/api";
 import type { Product, Customer, Warehouse } from "../../../types";
+import { TAX_RATE, formatTaxLabel } from "../../../utils/tax";
 
 interface CartItem {
   product: Product;
@@ -54,7 +55,7 @@ export default function SaleReviewModal({
     { subtotal: 0, items: 0 },
   );
 
-  const tax = totals.subtotal * 0.16;
+  const tax = totals.subtotal * TAX_RATE;
   const total = totals.subtotal + tax;
 
   return (
@@ -189,7 +190,7 @@ export default function SaleReviewModal({
           <span>Bs{totals.subtotal.toFixed(2)}</span>
         </div>
         <div className="flex justify-between text-sm text-gray-500 dark:text-gray-400">
-          <span>IVA (16%)</span>
+          <span>{formatTaxLabel()}</span>
           <span>Bs{tax.toFixed(2)}</span>
         </div>
         <div className="flex justify-between text-lg font-bold text-gray-800 dark:text-white/90 pt-2 border-t border-gray-200 dark:border-gray-700">

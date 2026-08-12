@@ -32,7 +32,7 @@ export const salesService = {
    * - Creates the sale record
    * - Creates sale items
    * - Deducts inventory
-   * - Calculates tax (16%)
+   *     - Calculates tax (configurable)
    * - Returns complete sale with items
    */
   create: async (data: SaleCreate): Promise<Sale> => {
