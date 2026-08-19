@@ -25,6 +25,7 @@ const statusClasses: Record<string, string> = {
 };
 
 function formatDate(iso: string): string {
+  // ISO strings with Z suffix are parsed as UTC; toLocaleDateString converts to browser's local timezone
   const d = new Date(iso);
   return d.toLocaleDateString("es-MX", {
     year: "numeric",

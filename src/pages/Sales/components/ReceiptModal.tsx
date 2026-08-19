@@ -15,6 +15,7 @@ interface ReceiptModalProps {
 export default function ReceiptModal({ isOpen, sale, customerName, onClose, onNewSale }: ReceiptModalProps) {
   if (!sale) return null;
 
+  // ISO strings with Z suffix are parsed as UTC; toLocaleDateString converts to browser's local timezone
   const formatDate = (iso: string) => {
     const d = new Date(iso);
     return d.toLocaleDateString("es-MX", {

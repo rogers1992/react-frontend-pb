@@ -45,6 +45,12 @@ api.interceptors.request.use(
       config.headers.Authorization = `Bearer ${token}`;
     }
     
+    // Send browser timezone so backend can compute "today" per-user
+    const tz = Intl.DateTimeFormat().resolvedOptions().timeZone;
+    if (tz) {
+      config.headers["X-Timezone"] = tz;
+    }
+    
     // Return modified config (axios uses this to send the request)
     return config;
   },

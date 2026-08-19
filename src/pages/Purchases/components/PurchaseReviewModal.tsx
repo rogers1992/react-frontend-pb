@@ -48,6 +48,7 @@ export default function PurchaseReviewModal({
 
   const total = totals.subtotal;
 
+  // ISO strings with Z suffix are parsed as UTC; toLocaleDateString converts to browser's local timezone
   const formatDate = (iso: string) => {
     if (!iso) return "Sin especificar";
     const d = new Date(iso);

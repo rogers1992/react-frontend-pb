@@ -20,6 +20,7 @@ function getTypeBadge(type: string) {
   return TYPE_BADGE[type] ?? { color: "primary" as const, label: type.replace("_", " ") };
 }
 
+// ISO strings with Z suffix are parsed as UTC; toLocaleString converts to browser's local timezone
 function formatDateTime(iso: string): string {
   const d = new Date(iso);
   if (isNaN(d.getTime())) return "—";

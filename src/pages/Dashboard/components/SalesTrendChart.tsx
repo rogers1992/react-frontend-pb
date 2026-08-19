@@ -42,7 +42,7 @@ export default function SalesTrendChart({ data, height = 310 }: Props) {
       },
       xaxis: {
         type: "category",
-        categories: data.map((p) => p.date_label),
+        categories: data.map((p) => p.date_label.slice(0, 10)),
         axisBorder: { show: false },
         axisTicks: { show: false },
         tooltip: { enabled: false },

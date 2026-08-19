@@ -1,8 +1,15 @@
-import { useCallback, useEffect, useState } from "react";
+import {
+  useCallback,
+  useEffect,
+  useMemo,
+  useState,
+  type ReactNode,
+} from "react";
 import { useSearchParams } from "react-router";
 import PageMeta from "../../components/common/PageMeta";
 import PageBreadcrumb from "../../components/common/PageBreadCrumb";
-import DataTable from "../../components/common/DataTable";
+import DataTable, { type Column } from "../../components/common/DataTable";
+import { TableRow, TableCell } from "../../components/ui/table";
 import DatePicker from "../../components/form/date-picker";
 import Button from "../../components/ui/button/Button";
 import { DownloadIcon } from "../../icons";
@@ -11,14 +18,12 @@ import { getErrorMessage } from "../../utils/error";
 import { reportsService } from "../../services/reports.service";
 import { downloadBlob } from "../../utils/download";
 import type {
-  Column,
-} from "../../components/common/DataTable";
-import type {
   ABCReportRow,
   CustomerReportRow,
   InventoryReportRow,
   ProductReportRow,
   ProfitReportRow,
+  ProfitSummaryRow,
   PurchaseReportRow,
   ReportType,
   SalesReportRow,
@@ -31,6 +36,7 @@ import {
   getInventoryReportColumns,
   getProductsReportColumns,
   getProfitReportColumns,
+  getProfitSummaryColumns,
   getPurchasesReportColumns,
   getSalesReportColumns,
   getSellersReportColumns,
@@ -45,6 +51,7 @@ const TABS: { key: ReportType; label: string }[] = [
   { key: "customers", label: "Clientes" },
   { key: "products", label: "Productos" },
   { key: "profit", label: "Rentabilidad" },
+  { key: "profit-summary", label: "Ganancia" },
   { key: "abc", label: "ABC" },
   { key: "slow-moving", label: "Lento" },
   { key: "sellers", label: "Vendedores" },
@@ -59,6 +66,7 @@ const downloadableFilenames: Record<ReportType, string> = {
   customers: "reporte_clientes.csv",
   products: "reporte_productos.csv",
   profit: "reporte_rentabilidad.csv",
+  "profit-summary": "reporte_resumen_ganancia.csv",
   abc: "reporte_abc.csv",
   "slow-moving": "reporte_lento.csv",
   sellers: "reporte_vendedores.csv",
@@ -71,9 +79,49 @@ type AnyRow =
   | CustomerReportRow
   | ProductReportRow
   | ProfitReportRow
+  | ProfitSummaryRow
   | ABCReportRow
   | SlowMovingReportRow
   | SellerReportRow;
+
+type ReportTotals =
+  | {
+      type: "sales";
+      units_sold: number;
+      subtotal: number;
+      tax_amount: number;
+      total_amount: number;
+    }
+  | {
+      type: "purchases";
+      items_count: number;
+      units_ordered: number;
+      total_amount: number;
+    }
+  | {
+      type: "profit";
+      units_sold: number;
+      revenue: number;
+      cogs: number;
+      gross_profit: number;
+      margin_pct: number;
+    }
+  | {
+      type: "sellers";
+      sales_count: number;
+      units_sold: number;
+      revenue: number;
+      tax_collected: number;
+    }
+  | {
+      type: "profit-summary";
+      sales_count: number;
+      revenue: number;
+      cogs: number;
+      gross_profit: number;
+      margin_pct: number;
+    }
+  | null;
 
 export default function ReportsIndex() {
   const { showToast } = useToast();
@@ -96,6 +144,10 @@ export default function ReportsIndex() {
   const [statusFilter, setStatusFilter] = useState<string>("");
   // Slow-moving inventory threshold (days)
   const [thresholdDays, setThresholdDays] = useState<number>(90);
+  // Profit summary period
+  const [summaryPeriod, setSummaryPeriod] = useState<
+    "daily" | "weekly" | "monthly"
+  >("daily");
 
   const setTab = (key: ReportType) => {
     const next = new URLSearchParams(searchParams);
@@ -104,6 +156,73 @@ export default function ReportsIndex() {
   };
 
   const columns: Column<AnyRow>[] = getColumnsFor(activeTab);
+
+  // Compute totals from the full dataset (not paginated)
+  const totals = useMemo((): ReportTotals => {
+    if (!data.length) return null;
+
+    switch (activeTab) {
+      case "sales": {
+        const rows = data as SalesReportRow[];
+        return {
+          type: "sales",
+          units_sold: rows.reduce((s, r) => s + r.units_sold, 0),
+          subtotal: rows.reduce((s, r) => s + Number(r.subtotal), 0),
+          tax_amount: rows.reduce((s, r) => s + Number(r.tax_amount), 0),
+          total_amount: rows.reduce((s, r) => s + Number(r.total_amount), 0),
+        };
+      }
+      case "purchases": {
+        const rows = data as PurchaseReportRow[];
+        return {
+          type: "purchases",
+          items_count: rows.reduce((s, r) => s + r.items_count, 0),
+          units_ordered: rows.reduce((s, r) => s + r.units_ordered, 0),
+          total_amount: rows.reduce((s, r) => s + Number(r.total_amount), 0),
+        };
+      }
+      case "profit": {
+        const rows = data as ProfitReportRow[];
+        const totalRevenue = rows.reduce((s, r) => s + Number(r.revenue), 0);
+        const totalCogs = rows.reduce((s, r) => s + Number(r.cogs), 0);
+        const totalProfit = totalRevenue - totalCogs;
+        return {
+          type: "profit",
+          units_sold: rows.reduce((s, r) => s + r.units_sold, 0),
+          revenue: totalRevenue,
+          cogs: totalCogs,
+          gross_profit: totalProfit,
+          margin_pct: totalRevenue > 0 ? (totalProfit / totalRevenue) * 100 : 0,
+        };
+      }
+      case "sellers": {
+        const rows = data as SellerReportRow[];
+        return {
+          type: "sellers",
+          sales_count: rows.reduce((s, r) => s + r.sales_count, 0),
+          units_sold: rows.reduce((s, r) => s + r.units_sold, 0),
+          revenue: rows.reduce((s, r) => s + Number(r.revenue), 0),
+          tax_collected: rows.reduce((s, r) => s + Number(r.tax_collected), 0),
+        };
+      }
+      case "profit-summary": {
+        const rows = data as ProfitSummaryRow[];
+        const totalRevenue = rows.reduce((s, r) => s + Number(r.revenue), 0);
+        const totalCogs = rows.reduce((s, r) => s + Number(r.cogs), 0);
+        const totalProfit = totalRevenue - totalCogs;
+        return {
+          type: "profit-summary",
+          sales_count: rows.reduce((s, r) => s + r.sales_count, 0),
+          revenue: totalRevenue,
+          cogs: totalCogs,
+          gross_profit: totalProfit,
+          margin_pct: totalRevenue > 0 ? (totalProfit / totalRevenue) * 100 : 0,
+        };
+      }
+      default:
+        return null;
+    }
+  }, [activeTab, data]);
 
   const fetchData = useCallback(async () => {
     try {
@@ -144,6 +263,13 @@ export default function ReportsIndex() {
         case "sellers":
           rows = await reportsService.getSellers({ from, to });
           break;
+        case "profit-summary":
+          rows = await reportsService.getProfitSummary({
+            period: summaryPeriod,
+            from,
+            to,
+          });
+          break;
       }
       setData(rows);
     } catch (err) {
@@ -153,7 +279,15 @@ export default function ReportsIndex() {
     } finally {
       setLoading(false);
     }
-  }, [activeTab, from, to, statusFilter, thresholdDays, showToast]);
+  }, [
+    activeTab,
+    from,
+    to,
+    statusFilter,
+    thresholdDays,
+    summaryPeriod,
+    showToast,
+  ]);
 
   useEffect(() => {
     setStatusFilter("");
@@ -197,11 +331,13 @@ export default function ReportsIndex() {
     "purchases",
     "products",
     "profit",
+    "profit-summary",
     "abc",
     "sellers",
   ].includes(activeTab);
   const showStatusFilter = ["purchases"].includes(activeTab);
   const showThresholdFilter = ["slow-moving"].includes(activeTab);
+  const showSummaryPeriodFilter = ["profit-summary"].includes(activeTab);
 
   return (
     <>
@@ -232,7 +368,10 @@ export default function ReportsIndex() {
       </div>
 
       {/* Filters row */}
-      {(showDateFilters || showStatusFilter || showThresholdFilter) && (
+      {(showDateFilters ||
+        showStatusFilter ||
+        showThresholdFilter ||
+        showSummaryPeriodFilter) && (
         <div className="mb-5 flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
           <div className="flex flex-1 flex-col gap-3 sm:flex-row sm:items-end">
             {showDateFilters && (
@@ -293,6 +432,32 @@ export default function ReportsIndex() {
                 </select>
               </div>
             )}
+            {showSummaryPeriodFilter && (
+              <div>
+                <label className="mb-1 block text-sm font-medium text-gray-700 dark:text-gray-300">
+                  Período
+                </label>
+                <div className="flex rounded-lg border border-gray-300 p-1 dark:border-gray-700">
+                  {(["daily", "weekly", "monthly"] as const).map((p) => (
+                    <button
+                      key={p}
+                      onClick={() => setSummaryPeriod(p)}
+                      className={`rounded-md px-3 py-1.5 text-xs font-medium transition ${
+                        summaryPeriod === p
+                          ? "bg-brand-500 text-white"
+                          : "text-gray-600 hover:bg-gray-100 dark:text-gray-400 dark:hover:bg-white/[0.03]"
+                      }`}
+                    >
+                      {p === "daily"
+                        ? "Diario"
+                        : p === "weekly"
+                          ? "Semanal"
+                          : "Mensual"}
+                    </button>
+                  ))}
+                </div>
+              </div>
+            )}
           </div>
         </div>
       )}
@@ -317,6 +482,19 @@ export default function ReportsIndex() {
           >
             {exporting ? "Exportando..." : "Exportar CSV"}
           </Button>
+        }
+        footer={
+          totals ? (
+            <TableRow>
+              <TableCell
+                isHeader
+                className="px-5 py-3 font-bold text-gray-800 dark:text-white/90"
+              >
+                Total
+              </TableCell>
+              {renderTotalCells(activeTab, totals, columns.length)}
+            </TableRow>
+          ) : undefined
         }
       />
     </>
@@ -343,5 +521,263 @@ function getColumnsFor(tab: ReportType): Column<AnyRow>[] {
       return getSlowMovingReportColumns() as Column<AnyRow>[];
     case "sellers":
       return getSellersReportColumns() as Column<AnyRow>[];
+    case "profit-summary":
+      return getProfitSummaryColumns() as Column<AnyRow>[];
   }
+}
+
+function formatCurrency(value: number | null | undefined): string {
+  if (value === null || value === undefined) return "—";
+  return `Bs ${Number(value).toFixed(2)}`;
+}
+
+function formatNumber(value: number | null | undefined): string {
+  if (value === null || value === undefined) return "—";
+  return Number(value).toLocaleString("es-MX");
+}
+
+function renderTotalCells(
+  tab: ReportType,
+  totals: ReportTotals,
+  _colCount: number,
+): ReactNode[] {
+  const cells: ReactNode[] = [];
+
+  switch (tab) {
+    case "sales": {
+      if (totals?.type !== "sales") return [];
+      // Columns: ID(1), Fecha(2), Cliente(3), Vendedor(4), Pago(5), Unidades(6), Subtotal(7), IVA(8), Total(9), Estado(10)
+      cells.push(
+        <TableCell key="empty" colSpan={4}>
+          <span />
+        </TableCell>,
+      ); // skip Fecha, Cliente, Vendedor, Pago
+      cells.push(
+        <TableCell
+          key="units"
+          className="px-5 py-3 font-semibold text-gray-800 dark:text-white/90"
+        >
+          <span>{formatNumber(totals.units_sold)}</span>
+        </TableCell>,
+      );
+      cells.push(
+        <TableCell
+          key="subtotal"
+          className="px-5 py-3 font-semibold text-gray-800 dark:text-white/90"
+        >
+          <span>{formatCurrency(totals.subtotal)}</span>
+        </TableCell>,
+      );
+      cells.push(
+        <TableCell
+          key="tax"
+          className="px-5 py-3 font-semibold text-gray-800 dark:text-white/90"
+        >
+          <span>{formatCurrency(totals.tax_amount)}</span>
+        </TableCell>,
+      );
+      cells.push(
+        <TableCell key="total" className="px-5 py-3 font-bold text-brand-500">
+          <span>{formatCurrency(totals.total_amount)}</span>
+        </TableCell>,
+      );
+      cells.push(
+        <TableCell key="status">
+          <span />
+        </TableCell>,
+      );
+      break;
+    }
+    case "purchases": {
+      if (totals?.type !== "purchases") return [];
+      // Columns: ID(1), Fecha(2), Proveedor(3), Almacén(4), Items(5), Unidades(6), Total(7), Estado(8)
+      cells.push(
+        <TableCell key="empty" colSpan={3}>
+          <span />
+        </TableCell>,
+      ); // skip Fecha, Proveedor, Almacén
+      cells.push(
+        <TableCell
+          key="items"
+          className="px-5 py-3 font-semibold text-gray-800 dark:text-white/90"
+        >
+          <span>{formatNumber(totals.items_count)}</span>
+        </TableCell>,
+      );
+      cells.push(
+        <TableCell
+          key="units"
+          className="px-5 py-3 font-semibold text-gray-800 dark:text-white/90"
+        >
+          <span>{formatNumber(totals.units_ordered)}</span>
+        </TableCell>,
+      );
+      cells.push(
+        <TableCell key="total" className="px-5 py-3 font-bold text-brand-500">
+          <span>{formatCurrency(totals.total_amount)}</span>
+        </TableCell>,
+      );
+      cells.push(
+        <TableCell key="status">
+          <span />
+        </TableCell>,
+      );
+      break;
+    }
+    case "profit": {
+      if (totals?.type !== "profit") return [];
+      // Columns: ID(1), Producto(2), SKU(3), Unidades(4), Ingresos(5), Costo(6), Ganancia(7), Margen%(8)
+      cells.push(
+        <TableCell key="empty" colSpan={2}>
+          <span />
+        </TableCell>,
+      ); // skip Producto, SKU
+      cells.push(
+        <TableCell
+          key="units"
+          className="px-5 py-3 font-semibold text-gray-800 dark:text-white/90"
+        >
+          <span>{formatNumber(totals.units_sold)}</span>
+        </TableCell>,
+      );
+      cells.push(
+        <TableCell
+          key="revenue"
+          className="px-5 py-3 font-semibold text-gray-800 dark:text-white/90"
+        >
+          <span>{formatCurrency(totals.revenue)}</span>
+        </TableCell>,
+      );
+      cells.push(
+        <TableCell
+          key="cogs"
+          className="px-5 py-3 font-semibold text-gray-800 dark:text-white/90"
+        >
+          <span>{formatCurrency(totals.cogs)}</span>
+        </TableCell>,
+      );
+      cells.push(
+        <TableCell
+          key="profit"
+          className={`px-5 py-3 font-bold ${
+            totals.gross_profit < 0
+              ? "text-error-600 dark:text-error-500"
+              : "text-success-600 dark:text-success-500"
+          }`}
+        >
+          <span>{formatCurrency(totals.gross_profit)}</span>
+        </TableCell>,
+      );
+      cells.push(
+        <TableCell
+          key="margin"
+          className="px-5 py-3 font-semibold text-gray-800 dark:text-white/90"
+        >
+          <span>{totals.margin_pct.toFixed(1)}%</span>
+        </TableCell>,
+      );
+      break;
+    }
+    case "sellers": {
+      if (totals?.type !== "sellers") return [];
+      // Columns: ID(1), Vendedor(2), Rol(3), # Ventas(4), Unidades(5), Ingresos(6), Ticket Prom.(7), IVA Recaudado(8)
+      cells.push(
+        <TableCell key="empty" colSpan={2}>
+          <span />
+        </TableCell>,
+      ); // skip Vendedor, Rol
+      cells.push(
+        <TableCell
+          key="sales_count"
+          className="px-5 py-3 font-semibold text-gray-800 dark:text-white/90"
+        >
+          <span>{formatNumber(totals.sales_count)}</span>
+        </TableCell>,
+      );
+      cells.push(
+        <TableCell
+          key="units"
+          className="px-5 py-3 font-semibold text-gray-800 dark:text-white/90"
+        >
+          <span>{formatNumber(totals.units_sold)}</span>
+        </TableCell>,
+      );
+      cells.push(
+        <TableCell key="revenue" className="px-5 py-3 font-bold text-brand-500">
+          <span>{formatCurrency(totals.revenue)}</span>
+        </TableCell>,
+      );
+      cells.push(
+        <TableCell key="empty2">
+          <span />
+        </TableCell>,
+      ); // skip Ticket Prom.
+      cells.push(
+        <TableCell
+          key="tax"
+          className="px-5 py-3 font-semibold text-gray-800 dark:text-white/90"
+        >
+          <span>{formatCurrency(totals.tax_collected)}</span>
+        </TableCell>,
+      );
+      break;
+    }
+    case "profit-summary": {
+      if (totals?.type !== "profit-summary") return [];
+      // Columns: Periodo(1), # Ventas(2), Ingresos(3), Costo(4), Ganancia(5), Margen%(6)
+      cells.push(
+        <TableCell
+          key="sales_count"
+          className="px-5 py-3 font-semibold text-gray-800 dark:text-white/90"
+        >
+          <span>{formatNumber(totals.sales_count)}</span>
+        </TableCell>,
+      );
+      cells.push(
+        <TableCell
+          key="revenue"
+          className="px-5 py-3 font-semibold text-gray-800 dark:text-white/90"
+        >
+          <span>{formatCurrency(totals.revenue)}</span>
+        </TableCell>,
+      );
+      cells.push(
+        <TableCell
+          key="cogs"
+          className="px-5 py-3 font-semibold text-gray-800 dark:text-white/90"
+        >
+          <span>{formatCurrency(totals.cogs)}</span>
+        </TableCell>,
+      );
+      cells.push(
+        <TableCell
+          key="profit"
+          className={`px-5 py-3 font-bold ${
+            totals.gross_profit < 0
+              ? "text-error-600 dark:text-error-500"
+              : "text-success-600 dark:text-success-500"
+          }`}
+        >
+          <span>{formatCurrency(totals.gross_profit)}</span>
+        </TableCell>,
+      );
+      cells.push(
+        <TableCell
+          key="margin"
+          className="px-5 py-3 font-semibold text-gray-800 dark:text-white/90"
+        >
+          <span>{totals.margin_pct.toFixed(1)}%</span>
+        </TableCell>,
+      );
+      break;
+    }
+    default:
+      cells.push(
+        <TableCell key="empty" colSpan={_colCount - 1}>
+          <span />
+        </TableCell>,
+      );
+  }
+
+  return cells;
 }

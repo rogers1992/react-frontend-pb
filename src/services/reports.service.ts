@@ -5,6 +5,7 @@ import type {
   InventoryReportRow,
   ProductReportRow,
   ProfitReportRow,
+  ProfitSummaryRow,
   PurchaseReportRow,
   ReportType,
   SalesReportRow,
@@ -34,6 +35,10 @@ export interface ProductReportFilters {
 export interface DateRangeFilters {
   from?: string;
   to?: string;
+}
+
+export interface ProfitSummaryFilters extends DateRangeFilters {
+  period?: "daily" | "weekly" | "monthly";
 }
 
 export interface ExportParams {
@@ -144,6 +149,15 @@ export const reportsService = {
     filters: DateRangeFilters = {},
   ): Promise<SellerReportRow[]> => {
     const response = await api.get<SellerReportRow[]>('/reports/sellers', {
+      params: filters,
+    });
+    return response.data;
+  },
+
+  getProfitSummary: async (
+    filters: ProfitSummaryFilters = {},
+  ): Promise<ProfitSummaryRow[]> => {
+    const response = await api.get<ProfitSummaryRow[]>('/reports/profit-summary', {
       params: filters,
     });
     return response.data;

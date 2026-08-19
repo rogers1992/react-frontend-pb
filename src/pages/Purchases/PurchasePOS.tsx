@@ -74,10 +74,7 @@ export default function PurchasePOS() {
           i.product.id === product.id ? { ...i, quantity: i.quantity + 1 } : i,
         );
       }
-      const defaultCost =
-        typeof product.unit_price === "string"
-          ? parseFloat(product.unit_price)
-          : product.unit_price;
+      const defaultCost = product.current_cost ?? 0;
       return [...prev, { product, quantity: 1, unit_cost: defaultCost }];
     });
   }, []);

@@ -253,6 +253,7 @@ export default function UserIndex() {
     text: w.name,
   }));
 
+  // ISO strings with Z suffix are parsed as UTC; toLocaleDateString converts to browser's local timezone
   const formatDate = (iso?: string) => {
     if (!iso) return "—";
     const d = new Date(iso);

@@ -5,6 +5,7 @@ import type {
   InventoryReportRow,
   ProductReportRow,
   ProfitReportRow,
+  ProfitSummaryRow,
   PurchaseReportRow,
   SalesReportRow,
   SellerReportRow,
@@ -12,6 +13,7 @@ import type {
 } from "../../../types";
 
 // --- Local formatters (matching the SalesTable / PurchaseHistory idiom) ---
+// ISO strings with Z suffix are parsed as UTC; toLocaleDateString converts to browser's local timezone
 
 function formatDate(iso: string | null): string {
   if (!iso) return "—";
@@ -791,6 +793,75 @@ export function getSellersReportColumns(): Column<SellerReportRow>[] {
       header: "IVA Recaudado",
       sortable: true,
       render: (r) => <span>{formatCurrency(r.tax_collected)}</span>,
+    },
+  ];
+}
+
+export function getProfitSummaryColumns(): Column<ProfitSummaryRow>[] {
+  return [
+    {
+      key: "period_label",
+      header: "Período",
+      sortable: true,
+      render: (r) => <span>{formatDateOnly(r.period_label)}</span>,
+    },
+    {
+      key: "sales_count",
+      header: "# Ventas",
+      sortable: true,
+      render: (r) => <span>{formatNumber(r.sales_count)}</span>,
+    },
+    {
+      key: "revenue",
+      header: "Ingresos",
+      sortable: true,
+      render: (r) => (
+        <span className="font-semibold text-gray-800 dark:text-white/90">
+          {formatCurrency(r.revenue)}
+        </span>
+      ),
+    },
+    {
+      key: "cogs",
+      header: "Costo",
+      sortable: true,
+      render: (r) => <span>{formatCurrency(r.cogs)}</span>,
+    },
+    {
+      key: "gross_profit",
+      header: "Ganancia",
+      sortable: true,
+      render: (r) => (
+        <span
+          className={`font-semibold ${
+            r.gross_profit < 0
+              ? "text-error-600 dark:text-error-500"
+              : "text-success-600 dark:text-success-500"
+          }`}
+        >
+          {formatCurrency(r.gross_profit)}
+        </span>
+      ),
+    },
+    {
+      key: "margin_pct",
+      header: "Margen %",
+      sortable: true,
+      render: (r) => {
+        const cls =
+          r.margin_pct < 0
+            ? "bg-error-50 text-error-600 dark:bg-error-500/15 dark:text-error-500"
+            : r.margin_pct >= 30
+              ? "bg-success-50 text-success-600 dark:bg-success-500/15 dark:text-success-500"
+              : "bg-gray-100 text-gray-700 dark:bg-gray-700 dark:text-gray-300";
+        return (
+          <span
+            className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium ${cls}`}
+          >
+            {Number(r.margin_pct).toFixed(1)}%
+          </span>
+        );
+      },
     },
   ];
 }

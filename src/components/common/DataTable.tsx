@@ -26,6 +26,7 @@ interface DataTableProps<T> {
   onSearchChange?: (value: string) => void;
   actions?: ReactNode;
   onRowClick?: (item: T) => void;
+  footer?: ReactNode;
 
   serverSide?: boolean;
   totalItems?: number;
@@ -59,6 +60,7 @@ export default function DataTable<T>({
   onSearchChange,
   actions,
   onRowClick,
+  footer,
   serverSide = false,
   totalItems,
   currentPage: controlledPage = 0,
@@ -271,6 +273,12 @@ export default function DataTable<T>({
                 ))
               )}
             </TableBody>
+
+            {footer && (
+              <tfoot className="border-t-2 border-gray-300 bg-gray-50 dark:border-gray-600 dark:bg-gray-800/50">
+                {footer}
+              </tfoot>
+            )}
           </Table>
         </div>
       </div>

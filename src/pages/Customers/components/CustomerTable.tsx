@@ -103,6 +103,7 @@ export function getCustomerColumns({
       key: "created_at",
       header: "Creado",
       sortable: true,
+      // ISO strings with Z suffix are parsed as UTC; toLocaleDateString converts to browser's local timezone
       render: (item: Customer) =>
         new Date(item.created_at).toLocaleDateString("es-MX", {
           year: "numeric",

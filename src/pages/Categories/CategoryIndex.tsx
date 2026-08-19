@@ -165,6 +165,7 @@ export default function CategoryIndex() {
       )
     : categories;
 
+  // ISO strings with Z suffix are parsed as UTC; toLocaleDateString converts to browser's local timezone
   const formatDate = (iso: string) => {
     const d = new Date(iso);
     return isNaN(d.getTime()) ? "—" : d.toLocaleDateString();

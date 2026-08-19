@@ -33,6 +33,7 @@ const statusClasses: Record<string, string> = {
 export default function SaleDetailModal({ isOpen, sale, customerName, sellerName, onClose }: SaleDetailModalProps) {
   if (!sale) return null;
 
+  // ISO strings with Z suffix are parsed as UTC; toLocaleDateString converts to browser's local timezone
   const formatDate = (iso: string) => {
     const d = new Date(iso);
     return d.toLocaleDateString("es-MX", {

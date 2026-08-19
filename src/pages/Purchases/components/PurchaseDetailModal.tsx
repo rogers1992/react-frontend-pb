@@ -24,6 +24,7 @@ const statusClasses: Record<string, string> = {
   cancelled: "bg-error-50 text-error-600 dark:bg-error-500/15 dark:text-error-500",
 };
 
+// ISO strings with Z suffix are parsed as UTC; toLocaleDateString converts to browser's local timezone
 function formatDate(iso: string): string {
   const d = new Date(iso);
   return d.toLocaleDateString("es-MX", {

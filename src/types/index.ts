@@ -602,6 +602,10 @@ export interface DashboardSummary {
   sales_count_month: number;
   avg_ticket: number;
   tax_collected_month: number;
+  gross_profit_today: number;
+  gross_profit_month: number;
+  cogs_month: number;
+  margin_pct_month: number;
   low_stock_count: number;
   pending_po_count: number;
   active_customers: number;
@@ -677,6 +681,7 @@ export type ReportType =
   | "customers"
   | "products"
   | "profit"
+  | "profit-summary"
   | "abc"
   | "slow-moving"
   | "sellers";
@@ -799,4 +804,13 @@ export interface SellerReportRow {
   revenue: number;
   avg_ticket: number;
   tax_collected: number;
+}
+
+export interface ProfitSummaryRow {
+  period_label: string;
+  revenue: number;
+  cogs: number;
+  gross_profit: number;
+  margin_pct: number;
+  sales_count: number;
 }

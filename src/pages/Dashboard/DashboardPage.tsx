@@ -226,6 +226,34 @@ export default function DashboardPage() {
             />
           </div>
 
+          {/* Gross profit tiles */}
+          <div className="mb-6 grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-2">
+            <KpiTile
+              label="Ganancia (hoy)"
+              value={loading ? "—" : formatCurrency(summary?.gross_profit_today)}
+              hint={summary?.margin_pct_month != null && summary?.gross_profit_today != null
+                ? `Margen mes: ${Number(summary.margin_pct_month).toFixed(1)}%`
+                : ""}
+              accent={
+                (summary?.gross_profit_today ?? 0) < 0
+                  ? "text-error-500"
+                  : "text-success-500"
+              }
+            />
+            <KpiTile
+              label="Ganancia (mes)"
+              value={loading ? "—" : formatCurrency(summary?.gross_profit_month)}
+              hint={summary?.cogs_month != null
+                ? `COGS: ${formatCurrency(summary.cogs_month)}`
+                : ""}
+              accent={
+                (summary?.gross_profit_month ?? 0) < 0
+                  ? "text-error-500"
+                  : "text-success-500"
+              }
+            />
+          </div>
+
           {/* Operational tiles */}
           <div className="mb-6 grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
             <KpiTile

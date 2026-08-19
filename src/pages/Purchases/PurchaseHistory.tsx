@@ -23,6 +23,7 @@ const statusLabels: Record<string, string> = {
   cancelled: "Cancelado",
 };
 
+// ISO strings with Z suffix are parsed as UTC; toLocaleDateString converts to browser's local timezone
 function formatDate(iso: string): string {
   const d = new Date(iso);
   return d.toLocaleDateString("es-MX", {

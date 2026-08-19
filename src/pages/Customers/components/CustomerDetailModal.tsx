@@ -145,6 +145,7 @@ export default function CustomerDetailModal({
         </h3>
         <p className="text-sm text-gray-500 dark:text-gray-400">
           ID: {customer.id} &middot; Cliente desde{" "}
+          {/* ISO strings with Z suffix are parsed as UTC; toLocaleDateString converts to browser's local timezone */}
           {new Date(customer.created_at).toLocaleDateString("es-MX", {
             year: "numeric",
             month: "long",
@@ -202,7 +203,8 @@ export default function CustomerDetailModal({
             <p className="text-xs text-gray-500 dark:text-gray-400 mb-1">Fecha de Nacimiento</p>
             <p className="text-sm text-gray-800 dark:text-white/90">
               {customer.date_of_birth
-                ? new Date(customer.date_of_birth).toLocaleDateString("es-MX")
+                ? /* ISO strings with Z suffix are parsed as UTC; toLocaleDateString converts to browser's local timezone */
+                  new Date(customer.date_of_birth).toLocaleDateString("es-MX")
                 : "—"}
             </p>
           </div>
@@ -244,6 +246,7 @@ export default function CustomerDetailModal({
               {customer.loyalty?.last_updated && (
                 <p className="text-xs text-gray-400">
                   Ultima actualizacion:{" "}
+                  {/* ISO strings with Z suffix are parsed as UTC; toLocaleDateString converts to browser's local timezone */}
                   {new Date(customer.loyalty.last_updated).toLocaleDateString("es-MX")}
                 </p>
               )}
@@ -333,6 +336,7 @@ export default function CustomerDetailModal({
                     <tr key={sale.id} className="hover:bg-gray-50 dark:hover:bg-white/[0.02]">
                       <td className="px-4 py-2 text-gray-800 dark:text-white/90">#{sale.id}</td>
                       <td className="px-4 py-2 text-gray-500 dark:text-gray-400">
+                        {/* ISO strings with Z suffix are parsed as UTC; toLocaleDateString converts to browser's local timezone */}
                         {new Date(sale.sale_date).toLocaleDateString("es-MX")}
                       </td>
                       <td className="px-4 py-2 text-gray-500 dark:text-gray-400 capitalize">
