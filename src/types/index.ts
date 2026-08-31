@@ -480,6 +480,8 @@ export interface Sale {
   id: number;
   customer_id: number;
   user_id: number;
+  warehouse_id?: number;
+  warehouse_name?: string;
   payment_method: string;
   notes?: string;
   total_amount: number;
@@ -495,6 +497,7 @@ export interface Sale {
 
 export interface SaleCreate {
   customer_id: number;
+  warehouse_id?: number;
   payment_method: string;
   notes?: string;
   items: SaleItemCreate[];

@@ -140,10 +140,15 @@ export default function SalesIndex() {
 
   const confirmSale = useCallback(async () => {
     setShowReview(false);
+    if (!selectedWarehouse) {
+      showToast({ type: "error", message: "Selecciona un almacén antes de confirmar la venta." });
+      return;
+    }
     try {
       setSubmitting(true);
       const saleData: SaleCreate = {
         customer_id: selectedCustomer?.id ?? 1,
+        warehouse_id: selectedWarehouse.id,
         payment_method: paymentMethod,
         notes: undefined,
         items: cart.map((item) => {
@@ -166,7 +171,7 @@ export default function SalesIndex() {
     } finally {
       setSubmitting(false);
     }
-  }, [cart, selectedCustomer, paymentMethod, showToast]);
+  }, [cart, selectedCustomer, selectedWarehouse, paymentMethod, showToast]);
 
   const handleNewSale = useCallback(() => {
     setShowReceipt(false);
