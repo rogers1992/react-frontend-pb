@@ -7,6 +7,7 @@ interface ProductGridProps {
   products: Product[];
   categories: Category[];
   warehouseInventory: Map<number, number>;
+  warehouseSelected: boolean;
   searchQuery: string;
   onSearchChange: (q: string) => void;
   selectedCategory: number | "all";
@@ -19,6 +20,7 @@ export default function ProductGrid({
   products,
   categories,
   warehouseInventory,
+  warehouseSelected,
   searchQuery,
   onSearchChange,
   selectedCategory,
@@ -104,6 +106,7 @@ export default function ProductGrid({
               product={product}
               category={categoryMap.get(product.category_id)}
               stockQuantity={warehouseInventory.get(product.id) ?? 0}
+              warehouseSelected={warehouseSelected}
               onAdd={() => onAddToCart(product)}
               onClick={() => onProductClick(product)}
             />

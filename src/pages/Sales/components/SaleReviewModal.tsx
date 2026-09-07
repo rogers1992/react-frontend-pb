@@ -16,6 +16,7 @@ interface SaleReviewModalProps {
   selectedCustomer: Customer | null;
   selectedWarehouse: Warehouse | null;
   paymentMethod: string;
+  notes: string;
   onConfirm: () => void;
   onBack: () => void;
 }
@@ -32,6 +33,7 @@ export default function SaleReviewModal({
   selectedCustomer,
   selectedWarehouse,
   paymentMethod,
+  notes,
   onConfirm,
   onBack,
 }: SaleReviewModalProps) {
@@ -97,6 +99,14 @@ export default function SaleReviewModal({
             {totals.items} producto{totals.items !== 1 ? "s" : ""}
           </p>
         </div>
+        {notes && (
+          <div className="col-span-2">
+            <span className="text-gray-500 dark:text-gray-400">Notas</span>
+            <p className="font-medium text-gray-800 dark:text-white/90 mt-0.5 whitespace-pre-wrap break-words">
+              {notes}
+            </p>
+          </div>
+        )}
       </div>
 
       {/* Items table */}

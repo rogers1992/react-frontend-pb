@@ -34,9 +34,11 @@ export const productService = {
     limit = 10,
     search?: string,
     includeInactive?: boolean,
+    signal?: AbortSignal,
   ): Promise<PaginationMeta<Product>> => {
     const response = await api.get<PaginationMeta<Product>>("/products", {
       params: { skip, limit, search, include_inactive: includeInactive },
+      signal,
     });
     return response.data;
   },

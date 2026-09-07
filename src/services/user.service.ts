@@ -14,9 +14,11 @@ export const userService = {
     search?: string,
     role_id?: number,
     is_active?: boolean,
+    signal?: AbortSignal,
   ): Promise<UserWithRole[]> => {
     const response = await api.get<UserWithRole[]>("/users", {
       params: { skip, limit, search, role_id, is_active },
+      signal,
     });
     return response.data;
   },

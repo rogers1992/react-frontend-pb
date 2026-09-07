@@ -10,9 +10,10 @@ export const salesService = {
   /**
    * Get all sales (with optional pagination)
    */
-  getAll: async (skip = 0, limit = 100): Promise<Sale[]> => {
+  getAll: async (skip = 0, limit = 100, signal?: AbortSignal): Promise<Sale[]> => {
     const response = await api.get<Sale[]>('/sales', {
-      params: { skip, limit }
+      params: { skip, limit },
+      signal,
     });
     return response.data;
   },

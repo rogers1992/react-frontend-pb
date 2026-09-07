@@ -34,6 +34,7 @@ export default function PurchasePOS() {
   const [selectedWarehouse, setSelectedWarehouse] = useState<Warehouse | null>(null);
   const [expectedDate, setExpectedDate] = useState("");
   const [showReview, setShowReview] = useState(false);
+  const [showValidation, setShowValidation] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedCategory, setSelectedCategory] = useState<number | "all">("all");
@@ -50,10 +51,6 @@ export default function PurchasePOS() {
       setCategories(categoriesData);
       setSuppliers(suppliersData);
       setWarehouses(warehousesData);
-
-      if (warehousesData.length > 0) {
-        setSelectedWarehouse(warehousesData[0]);
-      }
     } catch (error) {
       const message = getErrorMessage(error, "Error al cargar los datos.");
       showToast({ type: "error", message });
@@ -97,11 +94,14 @@ export default function PurchasePOS() {
   const clearCart = useCallback(() => {
     setCart([]);
     setSelectedSupplier(null);
+    setSelectedWarehouse(null);
     setExpectedDate("");
+    setShowValidation(false);
   }, []);
 
   const openReview = useCallback(() => {
     if (cart.length === 0) return;
+    setShowValidation(true);
     if (!selectedWarehouse) {
       showToast({ type: "error", message: "Selecciona un almacén." });
       return;
@@ -190,6 +190,7 @@ export default function PurchasePOS() {
             selectedWarehouse={selectedWarehouse}
             expectedDate={expectedDate}
             submitting={submitting}
+            showValidation={showValidation}
             onSelectSupplier={setSelectedSupplier}
             onSelectWarehouse={setSelectedWarehouse}
             onExpectedDateChange={setExpectedDate}

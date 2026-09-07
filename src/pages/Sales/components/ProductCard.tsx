@@ -7,6 +7,7 @@ interface ProductCardProps {
   product: Product;
   category: Category | undefined;
   stockQuantity: number;
+  warehouseSelected: boolean;
   onAdd: () => void;
   onClick: () => void;
 }
@@ -21,12 +22,13 @@ export default function ProductCard({
   product,
   category,
   stockQuantity,
+  warehouseSelected,
   onAdd,
   onClick,
 }: ProductCardProps) {
   const url = resolveImageUrl(product.image_url);
-  const { color, label } = getStockBadge(stockQuantity);
-  const isOutOfStock = stockQuantity === 0;
+  const { color, label } = warehouseSelected ? getStockBadge(stockQuantity) : { color: "warning" as const, label: "Sin almacén" };
+  const isDisabled = !warehouseSelected || stockQuantity === 0;
   const price =
     typeof product.unit_price === "string"
       ? parseFloat(product.unit_price)
@@ -92,7 +94,7 @@ export default function ProductCard({
               e.stopPropagation();
               onAdd();
             }}
-            disabled={isOutOfStock}
+            disabled={isDisabled}
             className="flex items-center justify-center gap-1 bg-brand-500 text-white rounded-lg px-3 py-1.5 text-xs font-medium hover:bg-brand-600 disabled:opacity-50 disabled:cursor-not-allowed transition"
           >
             <PlusIcon className="size-3.5" />

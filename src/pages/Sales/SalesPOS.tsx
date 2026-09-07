@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback, useMemo } from "react";
+import { useState, useEffect, useCallback, useMemo, useRef } from "react";
 import PageMeta from "../../components/common/PageMeta";
 import PageBreadcrumb from "../../components/common/PageBreadCrumb";
 import { useToast } from "../../context/ToastContext";
@@ -35,9 +35,11 @@ export default function SalesIndex() {
   const [cart, setCart] = useState<CartItem[]>([]);
   const [selectedCustomer, setSelectedCustomer] = useState<Customer | null>(null);
   const [selectedWarehouse, setSelectedWarehouse] = useState<Warehouse | null>(null);
-  const [paymentMethod, setPaymentMethod] = useState("efectivo");
+  const [paymentMethod, setPaymentMethod] = useState("");
+  const [notes, setNotes] = useState("");
   const [warehouseInventory, setWarehouseInventory] = useState<Map<number, number>>(new Map());
   const [showReview, setShowReview] = useState(false);
+  const [showValidation, setShowValidation] = useState(false);
   const [showReceipt, setShowReceipt] = useState(false);
   const [lastSale, setLastSale] = useState<Sale | null>(null);
   const [submitting, setSubmitting] = useState(false);
@@ -46,13 +48,21 @@ export default function SalesIndex() {
   const [selectedProduct, setSelectedProduct] = useState<Product | null>(null);
   const [showProductDetail, setShowProductDetail] = useState(false);
 
+  const abortRef = useRef<AbortController | null>(null);
+  const invAbortRef = useRef<AbortController | null>(null);
+
   const fetchData = useCallback(async () => {
+    abortRef.current?.abort();
+    const controller = new AbortController();
+    abortRef.current = controller;
+    const { signal } = controller;
+
     try {
       const [productsData, categoriesData, customersData, warehousesData] = await Promise.all([
-        productService.getAll(0, 1000),
-        categoryService.getAll(),
-        customerService.getAll(0, 100),
-        warehouseService.getAll(0, 100),
+        productService.getAll(0, 1000, undefined, undefined, signal),
+        categoryService.getAll(signal),
+        customerService.getAll(0, 100, undefined, undefined, undefined, signal),
+        warehouseService.getAll(0, 100, signal),
       ]);
       setProducts(productsData.items);
       setCategories(categoriesData);
@@ -64,11 +74,6 @@ export default function SalesIndex() {
         ? warehousesData.filter((w) => userWarehouseIds.includes(w.id))
         : [];
       setWarehouses(userWarehouses);
-
-      // Auto-select first assigned warehouse
-      if (userWarehouses.length > 0) {
-        setSelectedWarehouse(userWarehouses[0]);
-      }
     } catch (error) {
       const message = getErrorMessage(error, "Error al cargar los datos.");
       showToast({ type: "error", message });
@@ -77,22 +82,29 @@ export default function SalesIndex() {
 
   useEffect(() => {
     fetchData();
+    return () => { abortRef.current?.abort(); };
   }, [fetchData]);
 
   // Fetch inventory for selected warehouse
   useEffect(() => {
     if (!selectedWarehouse) return;
+    invAbortRef.current?.abort();
+    const controller = new AbortController();
+    invAbortRef.current = controller;
+
     const fetchInventory = async () => {
       try {
-        const items = await inventoryService.getByWarehouse(selectedWarehouse.id);
+        const items = await inventoryService.getByWarehouse(selectedWarehouse.id, controller.signal);
         const map = new Map<number, number>();
         items.forEach((item) => map.set(item.product_id, item.quantity));
         setWarehouseInventory(map);
       } catch {
+        if (controller.signal.aborted) return;
         setWarehouseInventory(new Map());
       }
     };
     fetchInventory();
+    return () => { controller.abort(); };
   }, [selectedWarehouse]);
 
   const addToCart = useCallback((product: Product, quantity: number = 1) => {
@@ -130,13 +142,25 @@ export default function SalesIndex() {
   const clearCart = useCallback(() => {
     setCart([]);
     setSelectedCustomer(null);
-    setPaymentMethod("efectivo");
+    setSelectedWarehouse(null);
+    setPaymentMethod("");
+    setNotes("");
+    setShowValidation(false);
   }, []);
 
   const openReview = useCallback(() => {
     if (cart.length === 0) return;
+    setShowValidation(true);
+    if (!selectedWarehouse) {
+      showToast({ type: "error", message: "Selecciona un almacén." });
+      return;
+    }
+    if (!paymentMethod) {
+      showToast({ type: "error", message: "Selecciona un método de pago." });
+      return;
+    }
     setShowReview(true);
-  }, [cart.length]);
+  }, [cart.length, selectedWarehouse, paymentMethod, showToast]);
 
   const confirmSale = useCallback(async () => {
     setShowReview(false);
@@ -150,7 +174,7 @@ export default function SalesIndex() {
         customer_id: selectedCustomer?.id ?? 1,
         warehouse_id: selectedWarehouse.id,
         payment_method: paymentMethod,
-        notes: undefined,
+        notes: notes || undefined,
         items: cart.map((item) => {
           const price = typeof item.product.unit_price === "string" ? parseFloat(item.product.unit_price) : item.product.unit_price;
           return {
@@ -171,7 +195,7 @@ export default function SalesIndex() {
     } finally {
       setSubmitting(false);
     }
-  }, [cart, selectedCustomer, selectedWarehouse, paymentMethod, showToast]);
+  }, [cart, selectedCustomer, selectedWarehouse, paymentMethod, notes, showToast]);
 
   const handleNewSale = useCallback(() => {
     setShowReceipt(false);
@@ -209,6 +233,7 @@ export default function SalesIndex() {
             products={products}
             categories={categories}
             warehouseInventory={warehouseInventory}
+            warehouseSelected={selectedWarehouse !== null}
             searchQuery={searchQuery}
             onSearchChange={setSearchQuery}
             selectedCategory={selectedCategory}
@@ -227,11 +252,14 @@ export default function SalesIndex() {
             paymentMethod={paymentMethod}
             submitting={submitting}
             warehouseInventory={warehouseInventory}
+            showValidation={showValidation}
+            notes={notes}
             onSelectCustomer={setSelectedCustomer}
             onSelectWarehouse={setSelectedWarehouse}
             onUpdateCart={updateCartItem}
             onRemoveFromCart={removeFromCart}
             onPaymentMethodChange={setPaymentMethod}
+            onNotesChange={setNotes}
             onConfirm={openReview}
             onCancel={handleCancel}
             hasNoWarehouses={warehouses.length === 0}
@@ -245,6 +273,7 @@ export default function SalesIndex() {
         selectedCustomer={selectedCustomer}
         selectedWarehouse={selectedWarehouse}
         paymentMethod={paymentMethod}
+        notes={notes}
         onConfirm={confirmSale}
         onBack={() => setShowReview(false)}
       />

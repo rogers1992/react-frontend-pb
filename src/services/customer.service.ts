@@ -24,9 +24,11 @@ export const customerService = {
     search?: string,
     email?: string,
     isActive?: boolean,
+    signal?: AbortSignal,
   ): Promise<PaginationMeta<Customer>> => {
     const response = await api.get<PaginationMeta<Customer>>('/customers', {
       params: { skip, limit, search, email, is_active: isActive },
+      signal,
     });
     return response.data;
   },

@@ -1,21 +1,20 @@
-import { useCallback, useEffect, useState, useMemo } from "react";
+import { useCallback, useEffect, useState, useRef } from "react";
 import PageMeta from "../../components/common/PageMeta";
 import PageBreadcrumb from "../../components/common/PageBreadCrumb";
 import ComponentCard from "../../components/common/ComponentCard";
-import DatePicker from "../../components/form/date-picker";
+import WarehouseMultiSelect from "../../components/common/WarehouseMultiSelect";
 import { useToast } from "../../context/ToastContext";
+import { useAuth } from "../../context/AuthContext";
 import { getErrorMessage } from "../../utils/error";
-import {
-  dashboardService,
-  type TrendPeriod,
-  type DateRangeParams,
-} from "../../services/dashboard.service";
+import { warehouseService } from "../../services/warehouse.service";
+import { dashboardService } from "../../services/dashboard.service";
 import type {
   DashboardSummary,
   InventoryStatusSummary,
   PaymentMethodRow,
   SalesTrendPoint,
   TopProductRow,
+  Warehouse,
 } from "../../types";
 import { AlertIcon, DollarLineIcon } from "../../icons";
 import SalesTrendChart from "./components/SalesTrendChart";
@@ -36,12 +35,6 @@ function formatNumber(value: number | null | undefined): string {
   if (value === null || value === undefined) return "—";
   return Number(value).toLocaleString("es-MX");
 }
-
-const PERIODS: { label: string; value: TrendPeriod }[] = [
-  { label: "Diario", value: "daily" },
-  { label: "Semanal", value: "weekly" },
-  { label: "Mensual", value: "monthly" },
-];
 
 function KpiTile({
   label,
@@ -80,6 +73,7 @@ function KpiTile({
 
 export default function DashboardPage() {
   const { showToast } = useToast();
+  const { user } = useAuth();
 
   const [summary, setSummary] = useState<DashboardSummary | null>(null);
   const [trend, setTrend] = useState<SalesTrendPoint[]>([]);
@@ -91,26 +85,30 @@ export default function DashboardPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(false);
 
-  const [from, setFrom] = useState<string | undefined>(undefined);
-  const [to, setTo] = useState<string | undefined>(undefined);
-  const [period, setPeriod] = useState<TrendPeriod>("daily");
+  const [warehouses, setWarehouses] = useState<Warehouse[]>([]);
+  const [selectedWarehouseIds, setSelectedWarehouseIds] = useState<number[]>([]);
+  const warehousesLoadedRef = useRef(false);
 
-  const range: DateRangeParams = useMemo(
-    () => ({ from, to }),
-    [from, to],
-  );
+  const abortRef = useRef<AbortController | null>(null);
+  const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const fetchAll = useCallback(async () => {
+    abortRef.current?.abort();
+    const controller = new AbortController();
+    abortRef.current = controller;
+    const { signal } = controller;
+    const warehouseParams = { warehouse_ids: selectedWarehouseIds };
+
     try {
       setLoading(true);
       setError(false);
       const [summaryData, trendData, paymentData, productsData, inventoryData] =
         await Promise.all([
-          dashboardService.getSummary(),
-          dashboardService.getSalesTrend(period, range),
-          dashboardService.getPaymentMethods(range),
-          dashboardService.getTopProducts(range, 10),
-          dashboardService.getInventoryStatus(),
+          dashboardService.getSummary({ warehouse_ids: selectedWarehouseIds, signal }),
+          dashboardService.getSalesTrend("daily", warehouseParams, signal),
+          dashboardService.getPaymentMethods(warehouseParams, signal),
+          dashboardService.getTopProducts(warehouseParams, 10, signal),
+          dashboardService.getInventoryStatus(signal),
         ]);
       setSummary(summaryData);
       setTrend(trendData);
@@ -118,6 +116,7 @@ export default function DashboardPage() {
       setTopProducts(productsData);
       setInventoryStatus(inventoryData);
     } catch (err) {
+      if (signal.aborted) return;
       const message = getErrorMessage(
         err,
         "Error al cargar el panel analítico.",
@@ -127,10 +126,36 @@ export default function DashboardPage() {
     } finally {
       setLoading(false);
     }
-  }, [period, range, showToast]);
+  }, [selectedWarehouseIds, showToast]);
 
   useEffect(() => {
-    fetchAll();
+    const loadWarehouses = async () => {
+      try {
+        const all = await warehouseService.getAll(0, 100);
+        const userWarehouseIds = user?.warehouse_ids;
+        const filtered =
+          userWarehouseIds && userWarehouseIds.length > 0
+            ? all.filter((w) => userWarehouseIds.includes(w.id))
+            : all;
+        setWarehouses(filtered);
+        setSelectedWarehouseIds(filtered.map((w) => w.id));
+        warehousesLoadedRef.current = true;
+      } catch {
+        // If fetch fails, leave empty — dashboard will still load
+      }
+    };
+    loadWarehouses();
+  }, [user]);
+
+  useEffect(() => {
+    if (!warehousesLoadedRef.current) return;
+    if (debounceRef.current) clearTimeout(debounceRef.current);
+    debounceRef.current = setTimeout(() => {
+      fetchAll();
+    }, 500);
+    return () => {
+      if (debounceRef.current) clearTimeout(debounceRef.current);
+    };
   }, [fetchAll]);
 
   const handleRefresh = () => fetchAll();
@@ -146,42 +171,16 @@ export default function DashboardPage() {
       {/* Filters */}
       <div className="mb-6 flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
         <div className="flex flex-1 flex-col gap-3 sm:flex-row sm:items-end">
-          <div className="sm:max-w-[200px]">
-            <DatePicker
-              mode="single"
-              value={from}
-              onChange={(val) => setFrom(val || undefined)}
-              label="Desde"
-              placeholder="YYYY-MM-DD"
-            />
-          </div>
-          <div className="sm:max-w-[200px]">
-            <DatePicker
-              mode="single"
-              value={to}
-              onChange={(val) => setTo(val || undefined)}
-              label="Hasta"
-              placeholder="YYYY-MM-DD"
+          <div className="sm:max-w-[180px]">
+            <WarehouseMultiSelect
+              warehouses={warehouses}
+              selectedIds={selectedWarehouseIds}
+              onChange={setSelectedWarehouseIds}
             />
           </div>
         </div>
 
         <div className="flex items-end gap-2">
-          <div className="flex rounded-lg border border-gray-300 p-1 dark:border-gray-700">
-            {PERIODS.map((p) => (
-              <button
-                key={p.value}
-                onClick={() => setPeriod(p.value)}
-                className={`rounded-md px-3 py-1.5 text-xs font-medium transition ${
-                  period === p.value
-                    ? "bg-brand-500 text-white"
-                    : "text-gray-600 hover:bg-gray-100 dark:text-gray-400 dark:hover:bg-white/[0.03]"
-                }`}
-              >
-                {p.label}
-              </button>
-            ))}
-          </div>
           <button
             onClick={handleRefresh}
             disabled={loading}
@@ -285,7 +284,7 @@ export default function DashboardPage() {
             <div className="lg:col-span-8">
               <ComponentCard
                 title="Tendencia de ingresos"
-                desc={`Agrupación: ${PERIODS.find((p) => p.value === period)?.label.toLowerCase()}`}
+                desc="Agrupación: diaria"
               >
                 {loading ? (
                   <div className="flex h-[310px] items-center justify-center text-sm text-gray-400">

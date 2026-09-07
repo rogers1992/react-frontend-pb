@@ -20,12 +20,15 @@ interface OrderSummaryProps {
   paymentMethod: string;
   submitting: boolean;
   warehouseInventory: Map<number, number>;
+  showValidation: boolean;
+  notes: string;
   hasNoWarehouses?: boolean;
   onSelectCustomer: (c: Customer | null) => void;
   onSelectWarehouse: (w: Warehouse | null) => void;
   onUpdateCart: (productId: number, quantity: number, discount: number) => void;
   onRemoveFromCart: (productId: number) => void;
   onPaymentMethodChange: (method: string) => void;
+  onNotesChange: (notes: string) => void;
   onConfirm: () => void;
   onCancel: () => void;
 }
@@ -39,12 +42,15 @@ export default function OrderSummary({
   paymentMethod,
   submitting,
   warehouseInventory,
+  showValidation,
+  notes,
   hasNoWarehouses = false,
   onSelectCustomer,
   onSelectWarehouse,
   onUpdateCart,
   onRemoveFromCart,
   onPaymentMethodChange,
+  onNotesChange,
   onConfirm,
   onCancel,
 }: OrderSummaryProps) {
@@ -63,10 +69,14 @@ export default function OrderSummary({
         Resumen de Venta
       </h3>
 
+      <p className="text-xs text-gray-400 -mt-3">
+        <span className="text-error-500">*</span> Campos obligatorios
+      </p>
+
       {/* Warehouse selector */}
       <div>
         <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-          Almacén
+          Almacén <span className="text-error-500">*</span>
         </label>
         <select
           value={selectedWarehouse?.id ?? ""}
@@ -74,7 +84,11 @@ export default function OrderSummary({
             const w = warehouses.find((wh) => wh.id === Number(e.target.value));
             onSelectWarehouse(w ?? null);
           }}
-          className="w-full rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm dark:bg-gray-900 dark:border-gray-700 dark:text-white/90 focus:border-brand-300 focus:outline-hidden focus:ring-3 focus:ring-brand-500/20"
+          className={`w-full rounded-lg border bg-white px-3 py-2 text-sm dark:bg-gray-900 dark:text-white/90 focus:outline-hidden focus:ring-3 focus:ring-brand-500/20 ${
+            showValidation && !selectedWarehouse
+              ? "border-error-500 dark:border-error-500 focus:border-error-500 focus:ring-error-500/20"
+              : "border-gray-300 dark:border-gray-700 focus:border-brand-300"
+          }`}
         >
           <option value="">Seleccionar almacén</option>
           {warehouses.map((w) => (
@@ -161,10 +175,32 @@ export default function OrderSummary({
 
       {/* Payment method */}
       <div>
-        <p className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-          Método de pago
-        </p>
-        <PaymentMethodSelector value={paymentMethod} onChange={onPaymentMethodChange} />
+        <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+          Método de pago <span className="text-error-500">*</span>
+        </label>
+        <div className={`rounded-lg border p-1 ${
+          showValidation && !paymentMethod
+            ? "border-error-500 dark:border-error-500"
+            : "border-transparent"
+        }`}>
+          <PaymentMethodSelector value={paymentMethod} onChange={onPaymentMethodChange} />
+        </div>
+      </div>
+
+      {/* Notes */}
+      <div>
+        <label htmlFor="sale-notes" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+          Notas (opcional)
+        </label>
+        <textarea
+          id="sale-notes"
+          value={notes}
+          onChange={(e) => onNotesChange(e.target.value)}
+          placeholder="Agregar nota..."
+          maxLength={500}
+          rows={3}
+          className="w-full rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm dark:bg-gray-900 dark:border-gray-700 dark:text-white/90 focus:border-brand-300 focus:outline-hidden focus:ring-3 focus:ring-brand-500/20 resize-none"
+        />
       </div>
 
       {/* Totals */}
@@ -193,7 +229,7 @@ export default function OrderSummary({
           size="sm"
           className="flex-1"
           onClick={onConfirm}
-          disabled={cart.length === 0 || submitting}
+          disabled={cart.length === 0 || !selectedWarehouse || !paymentMethod || submitting}
         >
           {submitting ? (
             <span className="flex items-center justify-center gap-2">

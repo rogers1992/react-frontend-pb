@@ -343,7 +343,7 @@ const AppSidebar: React.FC = () => {
               ref={(el) => {
                 subMenuRefs.current[`${menuType}-${index}`] = el;
               }}
-              className="overflow-hidden transition-all duration-300"
+              className="overflow-hidden transition-all duration-300 relative z-10"
               style={{
                 height:
                   openSubmenu?.type === menuType && openSubmenu?.index === index

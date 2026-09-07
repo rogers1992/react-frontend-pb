@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useRef, useMemo } from "react";
 import PageMeta from "../../components/common/PageMeta";
 import PageBreadcrumb from "../../components/common/PageBreadCrumb";
 import DataTable from "../../components/common/DataTable";
@@ -61,42 +61,43 @@ export default function InventoryIndex() {
     total_quantity: 0,
   });
 
+  const abortRef = useRef<AbortController | null>(null);
+
   const fetchData = useCallback(async () => {
+    abortRef.current?.abort();
+    const controller = new AbortController();
+    abortRef.current = controller;
+    const { signal } = controller;
+
     try {
       setLoading(true);
-      const [inventoryData, productsData, warehousesData] = await Promise.all([
-        inventoryService.getAll(0, 1000),
-        productService.getAll(0, 1000),
-        warehouseService.getAll(0, 100),
-      ]);
+      const [inventoryData, productsData, warehousesData, summaryRes] =
+        await Promise.all([
+          inventoryService.getAll(0, 1000, signal),
+          productService.getAll(0, 1000, undefined, undefined, signal),
+          warehouseService.getAll(0, 100, signal),
+          api.get("/inventory/summary", { signal }),
+        ]);
+      if (signal.aborted) return;
       setInventory(inventoryData);
       setProducts(productsData.items);
       setWarehouses(warehousesData);
-    } catch (error) {
-      const message = getErrorMessage(error, "Error al cargar los datos.");
+      setSummary(summaryRes.data);
+    } catch (err) {
+      if (signal.aborted) return;
+      const message = getErrorMessage(err, "Error al cargar los datos.");
       showToast({ type: "error", message });
     } finally {
-      setLoading(false);
+      if (!signal.aborted) setLoading(false);
     }
   }, [showToast]);
 
-  const fetchSummary = useCallback(async () => {
-    try {
-      const response = await api.get("/inventory/summary");
-      setSummary(response.data);
-    } catch {
-      // Summary is non-critical, silently fail
-    }
-  }, []);
-
   useEffect(() => {
     fetchData();
-    fetchSummary();
-  }, [fetchData, fetchSummary]);
+  }, [fetchData]);
 
   const refreshData = async () => {
-    await fetchData();
-    fetchSummary();
+    fetchData();
   };
 
   const handleOpenCreate = () => {
@@ -193,10 +194,14 @@ export default function InventoryIndex() {
     }
   };
 
-  const productMap = new Map(
-    products.map((p) => [p.id, { name: p.name, sku: p.sku }]),
+  const productMap = useMemo(
+    () => new Map(products.map((p) => [p.id, { name: p.name, sku: p.sku }])),
+    [products],
   );
-  const warehouseMap = new Map(warehouses.map((w) => [w.id, w.name]));
+  const warehouseMap = useMemo(
+    () => new Map(warehouses.map((w) => [w.id, w.name])),
+    [warehouses],
+  );
 
   const columns = getInventoryColumns(
     products,
@@ -206,7 +211,7 @@ export default function InventoryIndex() {
     handleOpenDelete,
   );
 
-  const filteredInventory = inventory.filter((item) => {
+  const filteredInventory = useMemo(() => inventory.filter((item) => {
     const matchesStatus =
       statusFilter === "all" || getInventoryStatus(item) === statusFilter;
 
@@ -220,7 +225,7 @@ export default function InventoryIndex() {
       product?.sku?.toLowerCase().includes(search) ||
       warehouseMap.get(item.warehouse_id)?.toLowerCase().includes(search)
     );
-  });
+  }), [inventory, statusFilter, searchQuery, productMap, warehouseMap]);
 
   return (
     <>

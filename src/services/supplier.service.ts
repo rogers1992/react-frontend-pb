@@ -2,8 +2,8 @@ import api from './api';
 import type { Supplier, SupplierCreate, SupplierUpdate } from '../types';
 
 export const supplierService = {
-  getAll: async (): Promise<Supplier[]> => {
-    const response = await api.get<Supplier[]>('/suppliers');
+  getAll: async (signal?: AbortSignal): Promise<Supplier[]> => {
+    const response = await api.get<Supplier[]>('/suppliers', { signal });
     return response.data;
   },
 

@@ -19,7 +19,18 @@ const api = axios.create({
   headers: { 
     'Content-Type': 'application/json' 
   },
-  timeout: 10000, // Cancel request after 10 seconds
+  timeout: 30000, // Cancel request after 30 seconds
+  paramsSerializer: (params) => {
+    const searchParams = new URLSearchParams();
+    for (const [key, value] of Object.entries(params)) {
+      if (Array.isArray(value)) {
+        value.forEach((v) => searchParams.append(key, String(v)));
+      } else if (value !== undefined && value !== null) {
+        searchParams.append(key, String(value));
+      }
+    }
+    return searchParams.toString();
+  },
 });
 
 /**

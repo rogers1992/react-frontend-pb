@@ -66,7 +66,7 @@ export default function PurchaseHistory() {
         purchaseService.getAll(params),
         supplierService.getAll(),
         warehouseService.getAll(0, 100),
-        userService.getAll(0, 1000),
+        userService.getAll(0, 200),
       ]);
       setOrders(ordersData);
       setSuppliers(suppliersData);

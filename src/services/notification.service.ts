@@ -6,16 +6,19 @@ export const notificationService = {
     unreadOnly = false,
     skip = 0,
     limit = 50,
+    signal?: AbortSignal,
   ): Promise<Notification[]> => {
     const response = await api.get<Notification[]>("/notifications", {
       params: { unread_only: unreadOnly, skip, limit },
+      signal,
     });
     return response.data;
   },
 
-  getUnreadCount: async (): Promise<number> => {
+  getUnreadCount: async (signal?: AbortSignal): Promise<number> => {
     const response = await api.get<UnreadCountResponse>(
       "/notifications/unread-count",
+      { signal },
     );
     return response.data.unread_count;
   },

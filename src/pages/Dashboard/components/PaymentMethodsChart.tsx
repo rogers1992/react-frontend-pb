@@ -70,7 +70,7 @@ export default function PaymentMethodsChart({ data, height = 320 }: Props) {
     [data, height],
   );
 
-  const series = data.map((d) => d.total);
+  const series = data.map((d) => Number(d.total) || 0);
 
   return (
     <div className="max-w-full overflow-x-auto custom-scrollbar">

@@ -19,6 +19,7 @@ export interface SalesReportFilters {
   to?: string;
   seller_id?: number;
   customer_id?: number;
+  warehouse_id?: number[];
 }
 
 export interface PurchaseReportFilters {
@@ -35,6 +36,7 @@ export interface ProductReportFilters {
 export interface DateRangeFilters {
   from?: string;
   to?: string;
+  warehouse_id?: number[];
 }
 
 export interface ProfitSummaryFilters extends DateRangeFilters {
@@ -48,6 +50,7 @@ export interface ExportParams {
   customer_id?: number;
   status?: string;
   threshold_days?: number;
+  warehouse_id?: number[];
 }
 
 /**
@@ -82,83 +85,97 @@ async function normalizeBlobError(error: AxiosError): Promise<never> {
 }
 
 export const reportsService = {
-  getSales: async (filters: SalesReportFilters = {}): Promise<SalesReportRow[]> => {
+  getSales: async (filters: SalesReportFilters = {}, signal?: AbortSignal): Promise<SalesReportRow[]> => {
     const response = await api.get<SalesReportRow[]>('/reports/sales', {
       params: filters,
+      signal,
     });
     return response.data;
   },
 
-  getInventory: async (): Promise<InventoryReportRow[]> => {
-    const response = await api.get<InventoryReportRow[]>('/reports/inventory');
+  getInventory: async (signal?: AbortSignal): Promise<InventoryReportRow[]> => {
+    const response = await api.get<InventoryReportRow[]>('/reports/inventory', { signal });
     return response.data;
   },
 
   getPurchases: async (
     filters: PurchaseReportFilters = {},
+    signal?: AbortSignal,
   ): Promise<PurchaseReportRow[]> => {
     const response = await api.get<PurchaseReportRow[]>('/reports/purchases', {
       params: filters,
+      signal,
     });
     return response.data;
   },
 
-  getCustomers: async (): Promise<CustomerReportRow[]> => {
-    const response = await api.get<CustomerReportRow[]>('/reports/customers');
+  getCustomers: async (signal?: AbortSignal): Promise<CustomerReportRow[]> => {
+    const response = await api.get<CustomerReportRow[]>('/reports/customers', { signal });
     return response.data;
   },
 
   getProducts: async (
     filters: ProductReportFilters = {},
+    signal?: AbortSignal,
   ): Promise<ProductReportRow[]> => {
     const response = await api.get<ProductReportRow[]>('/reports/products', {
       params: filters,
+      signal,
     });
     return response.data;
   },
 
   getProfit: async (
     filters: DateRangeFilters = {},
+    signal?: AbortSignal,
   ): Promise<ProfitReportRow[]> => {
     const response = await api.get<ProfitReportRow[]>('/reports/profit', {
       params: filters,
+      signal,
     });
     return response.data;
   },
 
   getABC: async (
     filters: DateRangeFilters = {},
+    signal?: AbortSignal,
   ): Promise<ABCReportRow[]> => {
     const response = await api.get<ABCReportRow[]>('/reports/abc', {
       params: filters,
+      signal,
     });
     return response.data;
   },
 
   getSlowMoving: async (
     thresholdDays: number = 90,
+    signal?: AbortSignal,
   ): Promise<SlowMovingReportRow[]> => {
     const response = await api.get<SlowMovingReportRow[]>(
       '/reports/slow-moving',
-      { params: { threshold_days: thresholdDays } },
+      { params: { threshold_days: thresholdDays }, signal },
     );
     return response.data;
   },
 
   getSellers: async (
     filters: DateRangeFilters = {},
+    signal?: AbortSignal,
   ): Promise<SellerReportRow[]> => {
     const response = await api.get<SellerReportRow[]>('/reports/sellers', {
       params: filters,
+      signal,
     });
     return response.data;
   },
 
   getProfitSummary: async (
     filters: ProfitSummaryFilters = {},
+    signal?: AbortSignal,
   ): Promise<ProfitSummaryRow[]> => {
     const response = await api.get<ProfitSummaryRow[]>('/reports/profit-summary', {
       params: filters,
+      signal,
     });
     return response.data;
   },
@@ -166,11 +183,13 @@ export const reportsService = {
   exportCsv: async (
     report: ReportType,
     params: ExportParams = {},
+    signal?: AbortSignal,
   ): Promise<Blob> => {
     try {
       const response = await api.get(`/reports/export`, {
         params: { report, ...params },
         responseType: 'blob',
+        signal,
       });
       return response.data as Blob;
     } catch (error) {

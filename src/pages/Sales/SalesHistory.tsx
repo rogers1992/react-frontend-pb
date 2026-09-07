@@ -33,7 +33,7 @@ export default function SalesHistory() {
       const [salesData, customersData, usersData] = await Promise.all([
         salesService.getAll(0, 200),
         customerService.getAll(0, 1000),
-        userService.getAll(0, 1000),
+        userService.getAll(0, 200),
       ]);
       setSales(salesData);
       setCustomers(customersData.items);

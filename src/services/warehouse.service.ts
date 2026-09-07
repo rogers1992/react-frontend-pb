@@ -2,8 +2,8 @@ import api from './api';
 import type { Warehouse, WarehouseCreate, WarehouseUpdate } from '../types';
 
 export const warehouseService = {
-  getAll: async (skip = 0, limit = 100): Promise<Warehouse[]> => {
-    const response = await api.get<Warehouse[]>('/warehouses', { params: { skip, limit } });
+  getAll: async (skip = 0, limit = 100, signal?: AbortSignal): Promise<Warehouse[]> => {
+    const response = await api.get<Warehouse[]>('/warehouses', { params: { skip, limit }, signal });
     return response.data;
   },
 

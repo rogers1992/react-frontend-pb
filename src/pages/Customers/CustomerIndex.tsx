@@ -64,6 +64,10 @@ export default function CustomerIndex() {
     fetchData(page, pageSize);
   }, [page, pageSize, fetchData]);
 
+  useEffect(() => {
+    setPage(0);
+  }, [searchQuery, showInactive]);
+
   const refreshData = async () => {
     const maxPage = Math.max(0, Math.ceil((totalItems - 1) / pageSize) - 1);
     const newPage = Math.min(page, maxPage);

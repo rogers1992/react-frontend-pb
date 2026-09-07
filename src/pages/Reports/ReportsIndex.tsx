@@ -11,11 +11,14 @@ import PageBreadcrumb from "../../components/common/PageBreadCrumb";
 import DataTable, { type Column } from "../../components/common/DataTable";
 import { TableRow, TableCell } from "../../components/ui/table";
 import DatePicker from "../../components/form/date-picker";
+import WarehouseMultiSelect from "../../components/common/WarehouseMultiSelect";
 import Button from "../../components/ui/button/Button";
 import { DownloadIcon } from "../../icons";
 import { useToast } from "../../context/ToastContext";
+import { useAuth } from "../../context/AuthContext";
 import { getErrorMessage } from "../../utils/error";
 import { reportsService } from "../../services/reports.service";
+import { warehouseService } from "../../services/warehouse.service";
 import { downloadBlob } from "../../utils/download";
 import type {
   ABCReportRow,
@@ -29,6 +32,7 @@ import type {
   SalesReportRow,
   SellerReportRow,
   SlowMovingReportRow,
+  Warehouse,
 } from "../../types";
 import {
   getABCReportColumns,
@@ -125,6 +129,7 @@ type ReportTotals =
 
 export default function ReportsIndex() {
   const { showToast } = useToast();
+  const { user } = useAuth();
   const [searchParams, setSearchParams] = useSearchParams();
 
   const initialTab = (searchParams.get("tab") ?? "sales") as ReportType;
@@ -148,6 +153,9 @@ export default function ReportsIndex() {
   const [summaryPeriod, setSummaryPeriod] = useState<
     "daily" | "weekly" | "monthly"
   >("daily");
+  // Warehouse filter
+  const [warehouses, setWarehouses] = useState<Warehouse[]>([]);
+  const [selectedWarehouseIds, setSelectedWarehouseIds] = useState<number[]>([]);
 
   const setTab = (key: ReportType) => {
     const next = new URLSearchParams(searchParams);
@@ -233,6 +241,9 @@ export default function ReportsIndex() {
           rows = await reportsService.getSales({
             from,
             to,
+            ...(selectedWarehouseIds.length > 0 && selectedWarehouseIds.length < warehouses.length
+              ? { warehouse_id: selectedWarehouseIds }
+              : {}),
           });
           break;
         case "inventory":
@@ -252,7 +263,13 @@ export default function ReportsIndex() {
           rows = await reportsService.getProducts({ from, to });
           break;
         case "profit":
-          rows = await reportsService.getProfit({ from, to });
+          rows = await reportsService.getProfit({
+            from,
+            to,
+            ...(selectedWarehouseIds.length > 0 && selectedWarehouseIds.length < warehouses.length
+              ? { warehouse_id: selectedWarehouseIds }
+              : {}),
+          });
           break;
         case "abc":
           rows = await reportsService.getABC({ from, to });
@@ -268,6 +285,9 @@ export default function ReportsIndex() {
             period: summaryPeriod,
             from,
             to,
+            ...(selectedWarehouseIds.length > 0 && selectedWarehouseIds.length < warehouses.length
+              ? { warehouse_id: selectedWarehouseIds }
+              : {}),
           });
           break;
       }
@@ -286,12 +306,32 @@ export default function ReportsIndex() {
     statusFilter,
     thresholdDays,
     summaryPeriod,
+    selectedWarehouseIds,
+    warehouses.length,
     showToast,
   ]);
 
   useEffect(() => {
     setStatusFilter("");
   }, [activeTab]);
+
+  useEffect(() => {
+    const loadWarehouses = async () => {
+      try {
+        const all = await warehouseService.getAll(0, 100);
+        const userWarehouseIds = user?.warehouse_ids;
+        const filtered =
+          userWarehouseIds && userWarehouseIds.length > 0
+            ? all.filter((w) => userWarehouseIds.includes(w.id))
+            : all;
+        setWarehouses(filtered);
+        setSelectedWarehouseIds(filtered.map((w) => w.id));
+      } catch {
+        // If fetch fails, leave empty — reports will still load
+      }
+    };
+    loadWarehouses();
+  }, [user]);
 
   useEffect(() => {
     fetchData();
@@ -305,12 +345,20 @@ export default function ReportsIndex() {
         to?: string;
         status?: string;
         threshold_days?: number;
+        warehouse_id?: number[];
       } = { from, to };
       if (activeTab === "purchases" && statusFilter) {
         params.status = statusFilter;
       }
       if (activeTab === "slow-moving") {
         params.threshold_days = thresholdDays;
+      }
+      if (
+        ["sales", "profit", "profit-summary"].includes(activeTab) &&
+        selectedWarehouseIds.length > 0 &&
+        selectedWarehouseIds.length < warehouses.length
+      ) {
+        params.warehouse_id = selectedWarehouseIds;
       }
       const blob = await reportsService.exportCsv(activeTab, params);
       downloadBlob(blob, downloadableFilenames[activeTab]);
@@ -335,6 +383,7 @@ export default function ReportsIndex() {
     "abc",
     "sellers",
   ].includes(activeTab);
+  const showWarehouseFilter = ["sales", "profit", "profit-summary"].includes(activeTab);
   const showStatusFilter = ["purchases"].includes(activeTab);
   const showThresholdFilter = ["slow-moving"].includes(activeTab);
   const showSummaryPeriodFilter = ["profit-summary"].includes(activeTab);
@@ -369,11 +418,21 @@ export default function ReportsIndex() {
 
       {/* Filters row */}
       {(showDateFilters ||
+        showWarehouseFilter ||
         showStatusFilter ||
         showThresholdFilter ||
         showSummaryPeriodFilter) && (
         <div className="mb-5 flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
           <div className="flex flex-1 flex-col gap-3 sm:flex-row sm:items-end">
+            {showWarehouseFilter && (
+              <div className="sm:max-w-[180px]">
+                <WarehouseMultiSelect
+                  warehouses={warehouses}
+                  selectedIds={selectedWarehouseIds}
+                  onChange={setSelectedWarehouseIds}
+                />
+              </div>
+            )}
             {showDateFilters && (
               <>
                 <div className="sm:max-w-[200px]">
@@ -548,10 +607,10 @@ function renderTotalCells(
       if (totals?.type !== "sales") return [];
       // Columns: ID(1), Fecha(2), Cliente(3), Vendedor(4), Pago(5), Unidades(6), Subtotal(7), IVA(8), Total(9), Estado(10)
       cells.push(
-        <TableCell key="empty" colSpan={4}>
+        <TableCell key="empty" colSpan={5}>
           <span />
         </TableCell>,
-      ); // skip Fecha, Cliente, Vendedor, Pago
+      ); // skip Fecha, Cliente, Vendedor, Almacén, Pago
       cells.push(
         <TableCell
           key="units"

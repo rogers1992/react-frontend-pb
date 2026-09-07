@@ -36,7 +36,7 @@ export default function PaymentMethodSelector({ value, onChange }: PaymentMethod
           key={m.key}
           onClick={() => onChange(m.key)}
           className={`flex-1 flex items-center justify-center gap-2 rounded-lg border px-4 py-3 text-sm font-medium transition cursor-pointer ${
-            value === m.key
+            value === m.key && value !== ""
               ? "bg-brand-500 text-white border-brand-500"
               : "bg-white text-gray-700 border-gray-300 hover:bg-gray-50 dark:bg-gray-800 dark:text-gray-400 dark:border-gray-700"
           }`}

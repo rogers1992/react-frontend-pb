@@ -2,8 +2,8 @@ import api from "./api";
 import type { Role, RoleCreate, RoleUpdate } from "../types";
 
 export const roleService = {
-  getAll: async (): Promise<Role[]> => {
-    const response = await api.get<Role[]>("/roles");
+  getAll: async (signal?: AbortSignal): Promise<Role[]> => {
+    const response = await api.get<Role[]>("/roles", { signal });
     return response.data;
   },
 

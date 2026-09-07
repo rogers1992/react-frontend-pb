@@ -703,6 +703,7 @@ export interface SalesReportRow {
   subtotal: number;
   tax_amount: number;
   total_amount: number;
+  warehouse_name: string | null;
 }
 
 export interface InventoryReportRow {

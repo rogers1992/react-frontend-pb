@@ -2,8 +2,8 @@ import api from './api';
 import type { Category, CategoryCreate, CategoryUpdate } from '../types';
 
 export const categoryService = {
-  getAll: async (): Promise<Category[]> => {
-    const response = await api.get<Category[]>('/categories');
+  getAll: async (signal?: AbortSignal): Promise<Category[]> => {
+    const response = await api.get<Category[]>('/categories', { signal });
     return response.data;
   },
 

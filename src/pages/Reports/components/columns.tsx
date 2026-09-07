@@ -143,6 +143,12 @@ export function getSalesReportColumns(): Column<SalesReportRow>[] {
       render: (r) => <span>{r.seller_name ?? "Desconocido"}</span>,
     },
     {
+      key: "warehouse_name",
+      header: "Almacén",
+      sortable: true,
+      render: (r) => <span>{r.warehouse_name ?? "Sin asignar"}</span>,
+    },
+    {
       key: "payment_method",
       header: "Pago",
       sortable: false,

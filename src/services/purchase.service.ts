@@ -15,8 +15,10 @@ export const purchaseService = {
     status?: string;
     supplier_id?: number;
     warehouse_id?: number;
+    signal?: AbortSignal;
   }): Promise<Order[]> => {
-    const response = await api.get<Order[]>('/purchases', { params });
+    const { signal, ...rest } = params ?? {};
+    const response = await api.get<Order[]>('/purchases', { params: rest, signal });
     return response.data;
   },
 

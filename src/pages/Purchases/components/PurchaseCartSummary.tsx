@@ -19,6 +19,7 @@ interface PurchaseCartSummaryProps {
   selectedWarehouse: Warehouse | null;
   expectedDate: string;
   submitting: boolean;
+  showValidation: boolean;
   onSelectSupplier: (s: Supplier | null) => void;
   onSelectWarehouse: (w: Warehouse | null) => void;
   onExpectedDateChange: (d: string) => void;
@@ -36,6 +37,7 @@ export default function PurchaseCartSummary({
   selectedWarehouse,
   expectedDate,
   submitting,
+  showValidation,
   onSelectSupplier,
   onSelectWarehouse,
   onExpectedDateChange,
@@ -60,10 +62,14 @@ export default function PurchaseCartSummary({
         Resumen de Compra
       </h3>
 
+      <p className="text-xs text-gray-400 -mt-3">
+        <span className="text-error-500">*</span> Campos obligatorios
+      </p>
+
       {/* Supplier selector */}
       <div>
         <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-          Proveedor
+          Proveedor <span className="text-error-500">*</span>
         </label>
         <select
           value={selectedSupplier?.id ?? ""}
@@ -71,7 +77,11 @@ export default function PurchaseCartSummary({
             const s = suppliers.find((sp) => sp.id === Number(e.target.value));
             onSelectSupplier(s ?? null);
           }}
-          className="w-full rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm dark:bg-gray-900 dark:border-gray-700 dark:text-white/90 focus:border-brand-300 focus:outline-hidden focus:ring-3 focus:ring-brand-500/20"
+          className={`w-full rounded-lg border bg-white px-3 py-2 text-sm dark:bg-gray-900 dark:text-white/90 focus:outline-hidden focus:ring-3 focus:ring-brand-500/20 ${
+            showValidation && !selectedSupplier
+              ? "border-error-500 dark:border-error-500 focus:border-error-500 focus:ring-error-500/20"
+              : "border-gray-300 dark:border-gray-700 focus:border-brand-300"
+          }`}
         >
           <option value="">Sin proveedor</option>
           {suppliers.map((s) => (
@@ -85,7 +95,7 @@ export default function PurchaseCartSummary({
       {/* Warehouse selector */}
       <div>
         <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-          Almacén
+          Almacén <span className="text-error-500">*</span>
         </label>
         <select
           value={selectedWarehouse?.id ?? ""}
@@ -93,7 +103,11 @@ export default function PurchaseCartSummary({
             const w = warehouses.find((wh) => wh.id === Number(e.target.value));
             onSelectWarehouse(w ?? null);
           }}
-          className="w-full rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm dark:bg-gray-900 dark:border-gray-700 dark:text-white/90 focus:border-brand-300 focus:outline-hidden focus:ring-3 focus:ring-brand-500/20"
+          className={`w-full rounded-lg border bg-white px-3 py-2 text-sm dark:bg-gray-900 dark:text-white/90 focus:outline-hidden focus:ring-3 focus:ring-brand-500/20 ${
+            showValidation && !selectedWarehouse
+              ? "border-error-500 dark:border-error-500 focus:border-error-500 focus:ring-error-500/20"
+              : "border-gray-300 dark:border-gray-700 focus:border-brand-300"
+          }`}
         >
           <option value="">Seleccionar almacén</option>
           {warehouses.map((w) => (
