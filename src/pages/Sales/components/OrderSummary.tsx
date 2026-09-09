@@ -23,6 +23,7 @@ interface OrderSummaryProps {
   showValidation: boolean;
   notes: string;
   hasNoWarehouses?: boolean;
+  hasOpenSession?: boolean;
   onSelectCustomer: (c: Customer | null) => void;
   onSelectWarehouse: (w: Warehouse | null) => void;
   onUpdateCart: (productId: number, quantity: number, discount: number) => void;
@@ -45,6 +46,7 @@ export default function OrderSummary({
   showValidation,
   notes,
   hasNoWarehouses = false,
+  hasOpenSession = true,
   onSelectCustomer,
   onSelectWarehouse,
   onUpdateCart,
@@ -218,6 +220,15 @@ export default function OrderSummary({
           <span>Bs{totals.total.toFixed(2)}</span>
         </div>
       </div>
+
+      {/* Caja warning for efectivo */}
+      {paymentMethod === "efectivo" && !hasOpenSession && (
+        <div className="rounded-lg border border-error-200 bg-error-50 p-3 dark:border-error-800 dark:bg-error-900/20">
+          <p className="text-sm text-error-700 dark:text-error-400">
+            No hay caja abierta para este almacen. Debes abrir caja antes de registrar ventas en efectivo.
+          </p>
+        </div>
+      )}
 
       {/* Actions */}
       <div className="flex gap-3">

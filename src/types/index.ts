@@ -23,6 +23,7 @@ export const VALID_RESOURCES = [
   "reports",
   "categories",
   "suppliers",
+  "cash_register",
 ] as const;
 
 export const VALID_ACTIONS = ["read", "create", "update", "delete"] as const;
@@ -38,6 +39,7 @@ export const RESOURCE_LABELS: Record<string, string> = {
   reports: "Reportes",
   categories: "Categorías",
   suppliers: "Proveedores",
+  cash_register: "Caja",
 };
 
 export const ACTION_LABELS: Record<string, string> = {
@@ -817,4 +819,83 @@ export interface ProfitSummaryRow {
   gross_profit: number;
   margin_pct: number;
   sales_count: number;
+}
+
+// =========================
+// CASH REGISTER TYPES
+// =========================
+
+export interface CashRegister {
+  id: number;
+  name: string;
+  warehouse_id: number | null;
+  is_active: boolean;
+  created_at: string;
+}
+
+export interface CashSession {
+  id: number;
+  register_id: number;
+  warehouse_id: number | null;
+  warehouse_name: string | null;
+  user_id: number;
+  opening_amount: number;
+  closing_amount: number | null;
+  expected_amount: number | null;
+  discrepancy: number | null;
+  opening_notes?: string;
+  closing_notes?: string;
+  opened_at: string;
+  closed_at: string | null;
+  status: 'open' | 'closed';
+  sales_total: number;
+  sales_count: number;
+  cash_sales_total: number;
+  movements: CashMovement[];
+}
+
+export interface CashMovement {
+  id: number;
+  session_id: number;
+  user_id: number;
+  type: 'ingreso' | 'egreso';
+  amount: number;
+  reason: string;
+  notes?: string;
+  created_at: string;
+  warehouse_name?: string;
+}
+
+export interface CashSessionOpen {
+  register_id: number;
+  opening_amount: number;
+  notes?: string;
+}
+
+export interface CashSessionClose {
+  closing_amount: number;
+  notes?: string;
+}
+
+export interface CashMovementCreate {
+  type: 'ingreso' | 'egreso';
+  amount: number;
+  reason: string;
+  notes?: string;
+  session_id?: number;
+}
+
+export interface CashSessionSummary {
+  session: CashSession;
+  sales_by_payment: Record<string, number>;
+  total_movements_in: number;
+  total_movements_out: number;
+}
+
+export interface WarehouseCajaSummary {
+  warehouse_id: number;
+  warehouse_name: string;
+  register_id: number | null;
+  register_name: string | null;
+  session: CashSession | null;
 }

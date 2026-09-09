@@ -9,6 +9,7 @@ import { customerService } from "../../services/customer.service";
 import { warehouseService } from "../../services/warehouse.service";
 import { inventoryService } from "../../services/inventory.service";
 import { salesService } from "../../services/sales.service";
+import { cajaService } from "../../services/caja.service";
 import { getErrorMessage } from "../../utils/error";
 import type { Product, Category, Customer, Warehouse, Sale, SaleCreate } from "../../types";
 import ProductGrid from "./components/ProductGrid";
@@ -47,6 +48,7 @@ export default function SalesIndex() {
   const [selectedCategory, setSelectedCategory] = useState<number | "all">("all");
   const [selectedProduct, setSelectedProduct] = useState<Product | null>(null);
   const [showProductDetail, setShowProductDetail] = useState(false);
+  const [hasOpenSession, setHasOpenSession] = useState(true);
 
   const abortRef = useRef<AbortController | null>(null);
   const invAbortRef = useRef<AbortController | null>(null);
@@ -107,6 +109,23 @@ export default function SalesIndex() {
     return () => { controller.abort(); };
   }, [selectedWarehouse]);
 
+  // Check for open cash session when warehouse is selected
+  useEffect(() => {
+    if (!selectedWarehouse) {
+      setHasOpenSession(true);
+      return;
+    }
+    const checkSession = async () => {
+      try {
+        await cajaService.getCurrentSession();
+        setHasOpenSession(true);
+      } catch {
+        setHasOpenSession(false);
+      }
+    };
+    checkSession();
+  }, [selectedWarehouse]);
+
   const addToCart = useCallback((product: Product, quantity: number = 1) => {
     setCart((prev) => {
       const existing = prev.find((i) => i.product.id === product.id);
@@ -165,7 +184,11 @@ export default function SalesIndex() {
   const confirmSale = useCallback(async () => {
     setShowReview(false);
     if (!selectedWarehouse) {
-      showToast({ type: "error", message: "Selecciona un almacén antes de confirmar la venta." });
+      showToast({ type: "error", message: "Selecciona un almacen antes de confirmar la venta." });
+      return;
+    }
+    if (paymentMethod === "efectivo" && !hasOpenSession) {
+      showToast({ type: "error", message: "Debes abrir caja antes de registrar ventas en efectivo." });
       return;
     }
     try {
@@ -195,7 +218,7 @@ export default function SalesIndex() {
     } finally {
       setSubmitting(false);
     }
-  }, [cart, selectedCustomer, selectedWarehouse, paymentMethod, notes, showToast]);
+  }, [cart, selectedCustomer, selectedWarehouse, paymentMethod, notes, showToast, hasOpenSession]);
 
   const handleNewSale = useCallback(() => {
     setShowReceipt(false);
@@ -254,6 +277,8 @@ export default function SalesIndex() {
             warehouseInventory={warehouseInventory}
             showValidation={showValidation}
             notes={notes}
+            hasNoWarehouses={warehouses.length === 0}
+            hasOpenSession={hasOpenSession}
             onSelectCustomer={setSelectedCustomer}
             onSelectWarehouse={setSelectedWarehouse}
             onUpdateCart={updateCartItem}
@@ -262,7 +287,6 @@ export default function SalesIndex() {
             onNotesChange={setNotes}
             onConfirm={openReview}
             onCancel={handleCancel}
-            hasNoWarehouses={warehouses.length === 0}
           />
         </div>
       </div>

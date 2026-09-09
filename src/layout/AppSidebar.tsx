@@ -15,6 +15,7 @@ import {
   AlertIcon,
   DollarLineIcon,
   PieChartIcon,
+  CashRegisterIcon,
 } from "../icons";
 import { useSidebar } from "../context/SidebarContext";
 import { usePermissions } from "../hooks/usePermissions";
@@ -28,12 +29,14 @@ type NavItem = {
   icon: React.ReactNode;
   path?: string;
   permission?: NavPermission;
+  adminOnly?: boolean;
   subItems?: {
     name: string;
     path: string;
     pro?: boolean;
     new?: boolean;
     permission?: NavPermission;
+    adminOnly?: boolean;
   }[];
 };
 
@@ -93,6 +96,15 @@ const navItems: NavItem[] = [
     name: "Reportes",
     path: "/reports",
     permission: { resource: "reports", action: "read" },
+  },
+  {
+    icon: <CashRegisterIcon />,
+    name: "Caja",
+    subItems: [
+      { name: "Caja", path: "/caja", pro: false, permission: { resource: "cash_register", action: "read" } },
+      { name: "Movimientos", path: "/caja/movements", pro: false, permission: { resource: "cash_register", action: "read" } },
+      { name: "Historial", path: "/caja/history", pro: false, permission: { resource: "cash_register", action: "read" } },
+    ],
   },
   {
     icon: <AlertIcon />,
@@ -185,7 +197,7 @@ const othersItems: NavItem[] = [
 const AppSidebar: React.FC = () => {
   const { isExpanded, isMobileOpen, isHovered, setIsHovered } = useSidebar();
   const location = useLocation();
-  const { can } = usePermissions();
+  const { can, hasRole } = usePermissions();
 
   const [openSubmenu, setOpenSubmenu] = useState<{
     type: "main" | "others";
@@ -198,11 +210,14 @@ const AppSidebar: React.FC = () => {
 
   // Permission-aware filtering: hide items/sub-items the current user
   // cannot access. Parent dropdowns with no visible sub-items are hidden.
+  // adminOnly items are only visible to users with the "admin" role.
   const visibleNavItems = useMemo(() => {
     const filterItem = (item: NavItem): NavItem | null => {
       if (item.subItems) {
         const visibleSubs = item.subItems.filter(
-          (s) => !s.permission || can(s.permission.resource, s.permission.action),
+          (s) =>
+            (!s.permission || can(s.permission.resource, s.permission.action)) &&
+            (!s.adminOnly || hasRole("admin")),
         );
         if (visibleSubs.length === 0) return null;
         return { ...item, subItems: visibleSubs };
@@ -210,10 +225,13 @@ const AppSidebar: React.FC = () => {
       if (item.permission && !can(item.permission.resource, item.permission.action)) {
         return null;
       }
+      if (item.adminOnly && !hasRole("admin")) {
+        return null;
+      }
       return item;
     };
     return navItems.map(filterItem).filter((i): i is NavItem => i !== null);
-  }, [can]);
+  }, [can, hasRole]);
 
   const visibleOthersItems = useMemo(
     () => othersItems.filter((i) => !i.permission || can(i.permission.resource, i.permission.action)),

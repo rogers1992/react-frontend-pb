@@ -28,6 +28,9 @@ const RoleIndex = lazy(() => import("./pages/Roles/RoleIndex"));
 const CustomerIndex = lazy(() => import("./pages/Customers/CustomerIndex"));
 const NotificationIndex = lazy(() => import("./pages/Notifications/NotificationIndex"));
 const ReportsIndex = lazy(() => import("./pages/Reports/ReportsIndex"));
+const CajaIndex = lazy(() => import("./pages/Caja/CajaIndex"));
+const CajaMovements = lazy(() => import("./pages/Caja/CajaMovements"));
+const CajaHistory = lazy(() => import("./pages/Caja/CajaHistory"));
 
 // UI demo pages (lazy)
 const UserProfiles = lazy(() => import("./pages/UserProfiles"));
@@ -137,6 +140,32 @@ export default function App() {
               element={
                 <PermissionRoute resource="reports" action="read">
                   <Suspense fallback={<PageLoader />}><ReportsIndex /></Suspense>
+                </PermissionRoute>
+              }
+            />
+
+            {/* Cash Register - permission gated */}
+            <Route
+              path="/caja"
+              element={
+                <PermissionRoute resource="cash_register" action="read">
+                  <Suspense fallback={<PageLoader />}><CajaIndex /></Suspense>
+                </PermissionRoute>
+              }
+            />
+            <Route
+              path="/caja/movements"
+              element={
+                <PermissionRoute resource="cash_register" action="read">
+                  <Suspense fallback={<PageLoader />}><CajaMovements /></Suspense>
+                </PermissionRoute>
+              }
+            />
+            <Route
+              path="/caja/history"
+              element={
+                <PermissionRoute resource="cash_register" action="read">
+                  <Suspense fallback={<PageLoader />}><CajaHistory /></Suspense>
                 </PermissionRoute>
               }
             />
