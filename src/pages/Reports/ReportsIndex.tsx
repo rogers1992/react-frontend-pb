@@ -1,7 +1,6 @@
 import {
   useCallback,
   useEffect,
-  useMemo,
   useState,
   type ReactNode,
 } from "react";
@@ -165,72 +164,75 @@ export default function ReportsIndex() {
 
   const columns: Column<AnyRow>[] = getColumnsFor(activeTab);
 
-  // Compute totals from the full dataset (not paginated)
-  const totals = useMemo((): ReportTotals => {
-    if (!data.length) return null;
+  // Compute totals from a given dataset (used for both full data CSV export and filtered footer)
+  const computeTotalsFromData = useCallback(
+    (tab: ReportType, rows: AnyRow[]): ReportTotals => {
+      if (!rows.length) return null;
 
-    switch (activeTab) {
-      case "sales": {
-        const rows = data as SalesReportRow[];
-        return {
-          type: "sales",
-          units_sold: rows.reduce((s, r) => s + r.units_sold, 0),
-          subtotal: rows.reduce((s, r) => s + Number(r.subtotal), 0),
-          tax_amount: rows.reduce((s, r) => s + Number(r.tax_amount), 0),
-          total_amount: rows.reduce((s, r) => s + Number(r.total_amount), 0),
-        };
+      switch (tab) {
+        case "sales": {
+          const r = rows as SalesReportRow[];
+          return {
+            type: "sales",
+            units_sold: r.reduce((s, x) => s + x.units_sold, 0),
+            subtotal: r.reduce((s, x) => s + Number(x.subtotal), 0),
+            tax_amount: r.reduce((s, x) => s + Number(x.tax_amount), 0),
+            total_amount: r.reduce((s, x) => s + Number(x.total_amount), 0),
+          };
+        }
+        case "purchases": {
+          const r = rows as PurchaseReportRow[];
+          return {
+            type: "purchases",
+            items_count: r.reduce((s, x) => s + x.items_count, 0),
+            units_ordered: r.reduce((s, x) => s + x.units_ordered, 0),
+            total_amount: r.reduce((s, x) => s + Number(x.total_amount), 0),
+          };
+        }
+        case "profit": {
+          const r = rows as ProfitReportRow[];
+          const totalRevenue = r.reduce((s, x) => s + Number(x.revenue), 0);
+          const totalCogs = r.reduce((s, x) => s + Number(x.cogs), 0);
+          const totalProfit = totalRevenue - totalCogs;
+          return {
+            type: "profit",
+            units_sold: r.reduce((s, x) => s + x.units_sold, 0),
+            revenue: totalRevenue,
+            cogs: totalCogs,
+            gross_profit: totalProfit,
+            margin_pct: totalRevenue > 0 ? (totalProfit / totalRevenue) * 100 : 0,
+          };
+        }
+        case "sellers": {
+          const r = rows as SellerReportRow[];
+          return {
+            type: "sellers",
+            sales_count: r.reduce((s, x) => s + x.sales_count, 0),
+            units_sold: r.reduce((s, x) => s + x.units_sold, 0),
+            revenue: r.reduce((s, x) => s + Number(x.revenue), 0),
+            tax_collected: r.reduce((s, x) => s + Number(x.tax_collected), 0),
+          };
+        }
+        case "profit-summary": {
+          const r = rows as ProfitSummaryRow[];
+          const totalRevenue = r.reduce((s, x) => s + Number(x.revenue), 0);
+          const totalCogs = r.reduce((s, x) => s + Number(x.cogs), 0);
+          const totalProfit = totalRevenue - totalCogs;
+          return {
+            type: "profit-summary",
+            sales_count: r.reduce((s, x) => s + x.sales_count, 0),
+            revenue: totalRevenue,
+            cogs: totalCogs,
+            gross_profit: totalProfit,
+            margin_pct: totalRevenue > 0 ? (totalProfit / totalRevenue) * 100 : 0,
+          };
+        }
+        default:
+          return null;
       }
-      case "purchases": {
-        const rows = data as PurchaseReportRow[];
-        return {
-          type: "purchases",
-          items_count: rows.reduce((s, r) => s + r.items_count, 0),
-          units_ordered: rows.reduce((s, r) => s + r.units_ordered, 0),
-          total_amount: rows.reduce((s, r) => s + Number(r.total_amount), 0),
-        };
-      }
-      case "profit": {
-        const rows = data as ProfitReportRow[];
-        const totalRevenue = rows.reduce((s, r) => s + Number(r.revenue), 0);
-        const totalCogs = rows.reduce((s, r) => s + Number(r.cogs), 0);
-        const totalProfit = totalRevenue - totalCogs;
-        return {
-          type: "profit",
-          units_sold: rows.reduce((s, r) => s + r.units_sold, 0),
-          revenue: totalRevenue,
-          cogs: totalCogs,
-          gross_profit: totalProfit,
-          margin_pct: totalRevenue > 0 ? (totalProfit / totalRevenue) * 100 : 0,
-        };
-      }
-      case "sellers": {
-        const rows = data as SellerReportRow[];
-        return {
-          type: "sellers",
-          sales_count: rows.reduce((s, r) => s + r.sales_count, 0),
-          units_sold: rows.reduce((s, r) => s + r.units_sold, 0),
-          revenue: rows.reduce((s, r) => s + Number(r.revenue), 0),
-          tax_collected: rows.reduce((s, r) => s + Number(r.tax_collected), 0),
-        };
-      }
-      case "profit-summary": {
-        const rows = data as ProfitSummaryRow[];
-        const totalRevenue = rows.reduce((s, r) => s + Number(r.revenue), 0);
-        const totalCogs = rows.reduce((s, r) => s + Number(r.cogs), 0);
-        const totalProfit = totalRevenue - totalCogs;
-        return {
-          type: "profit-summary",
-          sales_count: rows.reduce((s, r) => s + r.sales_count, 0),
-          revenue: totalRevenue,
-          cogs: totalCogs,
-          gross_profit: totalProfit,
-          margin_pct: totalRevenue > 0 ? (totalProfit / totalRevenue) * 100 : 0,
-        };
-      }
-      default:
-        return null;
-    }
-  }, [activeTab, data]);
+    },
+    [],
+  );
 
   const fetchData = useCallback(async () => {
     try {
@@ -542,8 +544,10 @@ export default function ReportsIndex() {
             {exporting ? "Exportando..." : "Exportar CSV"}
           </Button>
         }
-        footer={
-          totals ? (
+        renderFooter={(filteredData) => {
+          const filteredTotals = computeTotalsFromData(activeTab, filteredData);
+          if (!filteredTotals) return null;
+          return (
             <TableRow>
               <TableCell
                 isHeader
@@ -551,10 +555,10 @@ export default function ReportsIndex() {
               >
                 Total
               </TableCell>
-              {renderTotalCells(activeTab, totals, columns.length)}
+              {renderTotalCells(activeTab, filteredTotals, columns.length)}
             </TableRow>
-          ) : undefined
-        }
+          );
+        }}
       />
     </>
   );

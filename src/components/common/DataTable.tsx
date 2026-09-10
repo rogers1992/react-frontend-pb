@@ -27,6 +27,7 @@ interface DataTableProps<T> {
   actions?: ReactNode;
   onRowClick?: (item: T) => void;
   footer?: ReactNode;
+  renderFooter?: (filteredData: T[]) => ReactNode;
 
   serverSide?: boolean;
   totalItems?: number;
@@ -61,6 +62,7 @@ export default function DataTable<T>({
   actions,
   onRowClick,
   footer,
+  renderFooter,
   serverSide = false,
   totalItems,
   currentPage: controlledPage = 0,
@@ -274,9 +276,9 @@ export default function DataTable<T>({
               )}
             </TableBody>
 
-            {footer && (
+            {(footer || renderFooter) && (
               <tfoot className="border-t-2 border-gray-300 bg-gray-50 dark:border-gray-600 dark:bg-gray-800/50">
-                {footer}
+                {renderFooter ? renderFooter(filteredData) : footer}
               </tfoot>
             )}
           </Table>
