@@ -12,10 +12,11 @@ import {
   CustomerIcon,
   ReportsIcon,
   ConfigurationIcon,
-  AlertIcon,
   DollarLineIcon,
   PieChartIcon,
   CashRegisterIcon,
+  ExpensesIcon,
+  BellIcon,
 } from "../icons";
 import { useSidebar } from "../context/SidebarContext";
 import { usePermissions } from "../hooks/usePermissions";
@@ -107,7 +108,15 @@ const navItems: NavItem[] = [
     ],
   },
   {
-    icon: <AlertIcon />,
+    icon: <ExpensesIcon />,
+    name: "Gastos",
+    subItems: [
+      { name: "Gastos Operacionales", path: "/expenses", pro: false, permission: { resource: "expenses", action: "read" } },
+      { name: "Estado de Resultados", path: "/income-statement", pro: false, permission: { resource: "expenses", action: "read" } },
+    ],
+  },
+  {
+    icon: <BellIcon />,
     name: "Notificaciones",
     path: "/notifications",
   },
@@ -195,7 +204,7 @@ const othersItems: NavItem[] = [
 ];
 
 const AppSidebar: React.FC = () => {
-  const { isExpanded, isMobileOpen, isHovered, setIsHovered } = useSidebar();
+  const { isExpanded, isMobileOpen, isHovered, setIsHovered, toggleMobileSidebar } = useSidebar();
   const location = useLocation();
   const { can, hasRole } = usePermissions();
 
@@ -279,6 +288,13 @@ const AppSidebar: React.FC = () => {
       }
     }
   }, [openSubmenu]);
+
+  // Close mobile sidebar on navigation
+  useEffect(() => {
+    if (isMobileOpen) {
+      toggleMobileSidebar();
+    }
+  }, [location.pathname]); // eslint-disable-next-line react-hooks/exhaustive-deps
 
   const handleSubmenuToggle = (index: number, menuType: "main" | "others") => {
     setOpenSubmenu((prevOpenSubmenu) => {

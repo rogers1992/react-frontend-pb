@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback, useMemo } from "react";
+import { useState, useEffect, useCallback, useMemo, useRef } from "react";
 import { useNavigate } from "react-router";
 import PageMeta from "../../components/common/PageMeta";
 import PageBreadcrumb from "../../components/common/PageBreadCrumb";
@@ -12,6 +12,7 @@ import { getErrorMessage } from "../../utils/error";
 import type { Product, Category, Supplier, Warehouse, OrderCreate } from "../../types";
 import PurchaseProductGrid from "./components/PurchaseProductGrid";
 import PurchaseCartSummary from "./components/PurchaseCartSummary";
+import CartDrawer from "../../components/common/CartDrawer";
 import PurchaseReviewModal from "./components/PurchaseReviewModal";
 
 interface CartItem {
@@ -39,6 +40,8 @@ export default function PurchasePOS() {
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedCategory, setSelectedCategory] = useState<number | "all">("all");
 
+  const prevWarehouseIdRef = useRef<number | null>(null);
+
   const fetchData = useCallback(async () => {
     try {
       const [productsData, categoriesData, suppliersData, warehousesData] = await Promise.all([
@@ -60,6 +63,27 @@ export default function PurchasePOS() {
   useEffect(() => {
     fetchData();
   }, [fetchData]);
+
+  // Clear cart when switching warehouses (not on initial selection)
+  useEffect(() => {
+    if (prevWarehouseIdRef.current !== null && prevWarehouseIdRef.current !== selectedWarehouse?.id) {
+      setCart([]);
+      setSelectedSupplier(null);
+      setExpectedDate("");
+      setShowValidation(false);
+    }
+    prevWarehouseIdRef.current = selectedWarehouse?.id ?? null;
+  }, [selectedWarehouse]);
+
+  const cartTotal = useMemo(() =>
+    cart.reduce((sum, item) => {
+      const cost = typeof item.unit_cost === "number"
+        ? item.unit_cost
+        : parseFloat(item.unit_cost as unknown as string);
+      return sum + cost * item.quantity;
+    }, 0),
+    [cart]
+  );
 
   const inCartIds = useMemo(() => new Set(cart.map((i) => i.product.id)), [cart]);
 
@@ -182,23 +206,28 @@ export default function PurchasePOS() {
           />
         </div>
         <div className="xl:col-span-1">
-          <PurchaseCartSummary
-            cart={cart}
-            suppliers={suppliers}
-            warehouses={warehouses}
-            selectedSupplier={selectedSupplier}
-            selectedWarehouse={selectedWarehouse}
-            expectedDate={expectedDate}
-            submitting={submitting}
-            showValidation={showValidation}
-            onSelectSupplier={setSelectedSupplier}
-            onSelectWarehouse={setSelectedWarehouse}
-            onExpectedDateChange={setExpectedDate}
-            onUpdateCart={updateCartItem}
-            onRemoveFromCart={removeFromCart}
-            onConfirm={openReview}
-            onCancel={handleCancel}
-          />
+          <CartDrawer
+            itemCount={cart.reduce((s, i) => s + i.quantity, 0)}
+            total={cartTotal}
+          >
+            <PurchaseCartSummary
+              cart={cart}
+              suppliers={suppliers}
+              warehouses={warehouses}
+              selectedSupplier={selectedSupplier}
+              selectedWarehouse={selectedWarehouse}
+              expectedDate={expectedDate}
+              submitting={submitting}
+              showValidation={showValidation}
+              onSelectSupplier={setSelectedSupplier}
+              onSelectWarehouse={setSelectedWarehouse}
+              onExpectedDateChange={setExpectedDate}
+              onUpdateCart={updateCartItem}
+              onRemoveFromCart={removeFromCart}
+              onConfirm={openReview}
+              onCancel={handleCancel}
+            />
+          </CartDrawer>
         </div>
       </div>
 

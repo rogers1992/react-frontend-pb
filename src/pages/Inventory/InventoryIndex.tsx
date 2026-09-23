@@ -9,6 +9,7 @@ import { useToast } from "../../context/ToastContext";
 import { inventoryService } from "../../services/inventory.service";
 import { productService } from "../../services/product.service";
 import { warehouseService } from "../../services/warehouse.service";
+import { categoryService } from "../../services/category.service";
 import api from "../../services/api";
 import { getErrorMessage } from "../../utils/error";
 import type {
@@ -17,6 +18,7 @@ import type {
   InventoryItemUpdate,
   Product,
   Warehouse,
+  Category,
   InventoryTransferRequest,
 } from "../../types";
 import InventoryForm from "./components/InventoryForm";
@@ -38,10 +40,13 @@ export default function InventoryIndex() {
   const [warehouses, setWarehouses] = useState<Warehouse[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState("");
+  const [categories, setCategories] = useState<Category[]>([]);
+  const [selectedCategory, setSelectedCategory] = useState<number | "all">("all");
 
   const [page, setPage] = useState(0);
   const [pageSize, setPageSize] = useState(10);
   const [statusFilter, setStatusFilter] = useState<StatusFilter>("all");
+  const [warehouseFilter, setWarehouseFilter] = useState<number | "">("");
 
   const [isFormOpen, setIsFormOpen] = useState(false);
   const [selectedItem, setSelectedItem] = useState<InventoryItem | null>(null);
@@ -71,18 +76,20 @@ export default function InventoryIndex() {
 
     try {
       setLoading(true);
-      const [inventoryData, productsData, warehousesData, summaryRes] =
+      const [inventoryData, productsData, warehousesData, summaryRes, categoriesData] =
         await Promise.all([
           inventoryService.getAll(0, 1000, signal),
           productService.getAll(0, 1000, undefined, undefined, signal),
           warehouseService.getAll(0, 100, signal),
           api.get("/inventory/summary", { signal }),
+          categoryService.getAll(signal),
         ]);
       if (signal.aborted) return;
       setInventory(inventoryData);
       setProducts(productsData.items);
       setWarehouses(warehousesData);
       setSummary(summaryRes.data);
+      setCategories(categoriesData);
     } catch (err) {
       if (signal.aborted) return;
       const message = getErrorMessage(err, "Error al cargar los datos.");
@@ -195,7 +202,7 @@ export default function InventoryIndex() {
   };
 
   const productMap = useMemo(
-    () => new Map(products.map((p) => [p.id, { name: p.name, sku: p.sku }])),
+    () => new Map(products.map((p) => [p.id, { name: p.name, sku: p.sku, category_id: p.category_id }])),
     [products],
   );
   const warehouseMap = useMemo(
@@ -216,16 +223,22 @@ export default function InventoryIndex() {
       statusFilter === "all" || getInventoryStatus(item) === statusFilter;
 
     if (!matchesStatus) return false;
-    if (!searchQuery) return true;
+    if (warehouseFilter !== "" && item.warehouse_id !== warehouseFilter) return false;
 
     const product = productMap.get(item.product_id);
+    const matchesCategory =
+      selectedCategory === "all" || product?.category_id === selectedCategory;
+    if (!matchesCategory) return false;
+
+    if (!searchQuery) return true;
+
     const search = searchQuery.toLowerCase();
     return (
       product?.name.toLowerCase().includes(search) ||
       product?.sku?.toLowerCase().includes(search) ||
       warehouseMap.get(item.warehouse_id)?.toLowerCase().includes(search)
     );
-  }), [inventory, statusFilter, searchQuery, productMap, warehouseMap]);
+  }), [inventory, statusFilter, warehouseFilter, selectedCategory, searchQuery, productMap, warehouseMap]);
 
   return (
     <>
@@ -271,8 +284,8 @@ export default function InventoryIndex() {
         </div>
       </div>
 
-      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between mt-6 mb-4">
-        <div className="flex w-full items-center gap-3 sm:max-w-md">
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-center mt-6 mb-4">
+        <div className="flex flex-wrap items-center gap-3">
           <select
             value={statusFilter}
             onChange={(e) => {
@@ -284,6 +297,19 @@ export default function InventoryIndex() {
             <option value="all">Todos</option>
             <option value="stock_bajo">Stock Bajo</option>
             <option value="normal">Normal</option>
+          </select>
+          <select
+            value={warehouseFilter}
+            onChange={(e) => {
+              setWarehouseFilter(e.target.value === "" ? "" : Number(e.target.value));
+              setPage(0);
+            }}
+            className="h-11 shrink-0 rounded-lg border border-gray-300 bg-transparent px-3 text-sm text-gray-700 shadow-theme-xs focus:border-brand-300 focus:outline-hidden focus:ring-3 focus:ring-brand-500/20 dark:border-gray-700 dark:bg-gray-900 dark:text-white/90 dark:focus:border-brand-800"
+          >
+            <option value="">Todos los almacenes</option>
+            {warehouses.map((w) => (
+              <option key={w.id} value={w.id}>{w.name}</option>
+            ))}
           </select>
           <div className="flex-1">
             <SearchInput
@@ -327,6 +353,32 @@ export default function InventoryIndex() {
             Agregar Inventario
           </Button>
         </div>
+      </div>
+
+      <div className="flex gap-2 overflow-x-auto pb-1 custom-scrollbar mt-4 mb-4">
+        <button
+          onClick={() => { setSelectedCategory("all"); setPage(0); }}
+          className={`shrink-0 rounded-full px-4 py-1.5 text-sm font-medium transition ${
+            selectedCategory === "all"
+              ? "bg-brand-500 text-white"
+              : "bg-gray-100 text-gray-700 hover:bg-gray-200 dark:bg-gray-800 dark:text-gray-400 dark:hover:bg-gray-700"
+          }`}
+        >
+          Todos
+        </button>
+        {categories.map((cat) => (
+          <button
+            key={cat.id}
+            onClick={() => { setSelectedCategory(cat.id); setPage(0); }}
+            className={`shrink-0 rounded-full px-4 py-1.5 text-sm font-medium transition ${
+              selectedCategory === cat.id
+                ? "bg-brand-500 text-white"
+                : "bg-gray-100 text-gray-700 hover:bg-gray-200 dark:bg-gray-800 dark:text-gray-400 dark:hover:bg-gray-700"
+            }`}
+          >
+            {cat.name}
+          </button>
+        ))}
       </div>
 
       <DataTable<InventoryItem>

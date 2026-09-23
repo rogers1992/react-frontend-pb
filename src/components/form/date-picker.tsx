@@ -41,6 +41,7 @@ export default function DatePicker({
       static: true,
       monthSelectorType: "static",
       dateFormat: "Y-m-d",
+      disableMobile: true,
       defaultDate: value ?? defaultDate,
       onChange: (_dates, dateStr) => {
         onChangeRef.current?.(dateStr);

@@ -1,34 +1,36 @@
 import { resolveImageUrl } from "../../../services/api";
 import type { Product, Category } from "../../../types";
 import Badge from "../../../components/ui/badge/Badge";
-import { PlusIcon, EyeIcon } from "../../../icons";
+import { EyeIcon } from "../../../icons";
 
 interface ProductCardProps {
   product: Product;
   category: Category | undefined;
   stockQuantity: number;
+  availableStock: number;
   warehouseSelected: boolean;
   onAdd: () => void;
   onClick: () => void;
 }
 
-function getStockBadge(stock: number) {
-  if (stock === 0) return { color: "error" as const, label: "Agotado" };
-  if (stock <= 10) return { color: "warning" as const, label: "Poco stock" };
-  return { color: "success" as const, label: "En stock" };
+function getStockBadge(stock: number, available: number) {
+  if (stock === 0) return { color: "error" as const, label: available > 0 ? `Agotado (${available})` : "Agotado" };
+  if (stock <= 10) return { color: "warning" as const, label: `Poco stock (${available})` };
+  return { color: "success" as const, label: `En stock (${available})` };
 }
 
 export default function ProductCard({
   product,
   category,
   stockQuantity,
+  availableStock,
   warehouseSelected,
   onAdd,
   onClick,
 }: ProductCardProps) {
   const url = resolveImageUrl(product.image_url);
-  const { color, label } = warehouseSelected ? getStockBadge(stockQuantity) : { color: "warning" as const, label: "Sin almacén" };
-  const isDisabled = !warehouseSelected || stockQuantity === 0;
+  const { color, label } = warehouseSelected ? getStockBadge(stockQuantity, availableStock) : { color: "warning" as const, label: "Sin almacén" };
+  const isDisabled = !warehouseSelected || availableStock === 0;
   const price =
     typeof product.unit_price === "string"
       ? parseFloat(product.unit_price)
@@ -89,17 +91,16 @@ export default function ProductCard({
           <p className="text-brand-500 font-semibold text-lg">
             Bs{price.toFixed(2)}
           </p>
-          <button
-            onClick={(e) => {
-              e.stopPropagation();
-              onAdd();
-            }}
-            disabled={isDisabled}
-            className="flex items-center justify-center gap-1 bg-brand-500 text-white rounded-lg px-3 py-1.5 text-xs font-medium hover:bg-brand-600 disabled:opacity-50 disabled:cursor-not-allowed transition"
-          >
-            <PlusIcon className="size-3.5" />
-            Agregar
-          </button>
+            <button
+              onClick={(e) => {
+                e.stopPropagation();
+                onAdd();
+              }}
+              disabled={isDisabled}
+              className="flex items-center justify-center bg-brand-500 text-white rounded-lg px-3 py-1.5 text-xs font-medium hover:bg-brand-600 disabled:opacity-50 disabled:cursor-not-allowed transition"
+            >
+              Agregar
+            </button>
         </div>
       </div>
     </div>

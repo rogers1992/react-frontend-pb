@@ -8,14 +8,15 @@ interface ProductDetailModalProps {
   product: Product | null;
   category: Category | undefined;
   stockQuantity: number;
+  availableStock: number;
   onClose: () => void;
   onAddToCart: (product: Product, quantity: number) => void;
 }
 
-function getStockBadge(stock: number) {
-  if (stock === 0) return { color: "error" as const, label: "Agotado" };
-  if (stock <= 10) return { color: "warning" as const, label: "Poco stock" };
-  return { color: "success" as const, label: "En stock" };
+function getStockBadge(stock: number, available: number) {
+  if (stock === 0) return { color: "error" as const, label: available > 0 ? `Agotado (${available})` : "Agotado" };
+  if (stock <= 10) return { color: "warning" as const, label: `Poco stock (${available})` };
+  return { color: "success" as const, label: `En stock (${available})` };
 }
 
 export default function ProductDetailModal({
@@ -23,6 +24,7 @@ export default function ProductDetailModal({
   product,
   category,
   stockQuantity,
+  availableStock,
   onClose,
   onAddToCart,
 }: ProductDetailModalProps) {
@@ -32,8 +34,8 @@ export default function ProductDetailModal({
     typeof product.unit_price === "string"
       ? parseFloat(product.unit_price)
       : product.unit_price;
-  const { color, label } = getStockBadge(stockQuantity);
-  const isOutOfStock = stockQuantity === 0;
+  const { color, label } = getStockBadge(stockQuantity, availableStock);
+  const isOutOfStock = availableStock === 0;
 
   const images: string[] = [];
   if (product.images && product.images.length > 0) {

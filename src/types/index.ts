@@ -24,6 +24,7 @@ export const VALID_RESOURCES = [
   "categories",
   "suppliers",
   "cash_register",
+  "expenses",
 ] as const;
 
 export const VALID_ACTIONS = ["read", "create", "update", "delete"] as const;
@@ -40,6 +41,7 @@ export const RESOURCE_LABELS: Record<string, string> = {
   categories: "Categorías",
   suppliers: "Proveedores",
   cash_register: "Caja",
+  expenses: "Gastos",
 };
 
 export const ACTION_LABELS: Record<string, string> = {
@@ -898,4 +900,75 @@ export interface WarehouseCajaSummary {
   register_id: number | null;
   register_name: string | null;
   session: CashSession | null;
+}
+
+// ---------------------------------------------------------------------------
+// Expenses
+// ---------------------------------------------------------------------------
+export interface ExpenseCategory {
+  id: number;
+  name: string;
+  description: string | null;
+  sort_order: number;
+  is_active: boolean;
+}
+
+export interface Expense {
+  id: number;
+  category_id: number;
+  category_name: string | null;
+  warehouse_id: number | null;
+  warehouse_name: string | null;
+  amount: number;
+  description: string | null;
+  expense_date: string | null;
+  payment_method: string;
+  is_recurring: boolean;
+  recorded_by: number;
+  recorded_by_name: string | null;
+  notes: string | null;
+  created_at: string | null;
+}
+
+export interface ExpenseCreate {
+  category_id: number;
+  warehouse_id?: number | null;
+  amount: number;
+  description?: string | null;
+  expense_date?: string | null;
+  payment_method?: string;
+  is_recurring?: boolean;
+  notes?: string | null;
+}
+
+export interface ExpenseUpdate {
+  category_id?: number;
+  warehouse_id?: number | null;
+  amount?: number;
+  description?: string | null;
+  expense_date?: string | null;
+  payment_method?: string;
+  is_recurring?: boolean;
+  notes?: string | null;
+}
+
+export interface ExpenseSummary {
+  category_name: string;
+  total: number;
+  count: number;
+}
+
+export interface IncomeStatement {
+  warehouse_id: number | null;
+  warehouse_name: string | null;
+  period_start: string;
+  period_end: string;
+  revenue: number;
+  cogs: number;
+  gross_profit: number;
+  gross_margin_pct: number;
+  expenses: ExpenseSummary[];
+  total_expenses: number;
+  net_profit: number;
+  net_margin_pct: number;
 }

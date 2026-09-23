@@ -31,6 +31,8 @@ const ReportsIndex = lazy(() => import("./pages/Reports/ReportsIndex"));
 const CajaIndex = lazy(() => import("./pages/Caja/CajaIndex"));
 const CajaMovements = lazy(() => import("./pages/Caja/CajaMovements"));
 const CajaHistory = lazy(() => import("./pages/Caja/CajaHistory"));
+const ExpenseIndex = lazy(() => import("./pages/Expenses/ExpenseIndex"));
+const IncomeStatement = lazy(() => import("./pages/Expenses/IncomeStatement"));
 
 // UI demo pages (lazy)
 const UserProfiles = lazy(() => import("./pages/UserProfiles"));
@@ -166,6 +168,24 @@ export default function App() {
               element={
                 <PermissionRoute resource="cash_register" action="read">
                   <Suspense fallback={<PageLoader />}><CajaHistory /></Suspense>
+                </PermissionRoute>
+              }
+            />
+
+            {/* Expenses */}
+            <Route
+              path="/expenses"
+              element={
+                <PermissionRoute resource="expenses" action="read">
+                  <Suspense fallback={<PageLoader />}><ExpenseIndex /></Suspense>
+                </PermissionRoute>
+              }
+            />
+            <Route
+              path="/income-statement"
+              element={
+                <PermissionRoute resource="expenses" action="read">
+                  <Suspense fallback={<PageLoader />}><IncomeStatement /></Suspense>
                 </PermissionRoute>
               }
             />

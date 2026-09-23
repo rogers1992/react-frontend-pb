@@ -1,4 +1,5 @@
 import { useState, useEffect, useCallback, useMemo, useRef } from "react";
+import axios from "axios";
 import PageMeta from "../../components/common/PageMeta";
 import PageBreadcrumb from "../../components/common/PageBreadCrumb";
 import { useToast } from "../../context/ToastContext";
@@ -12,8 +13,10 @@ import { salesService } from "../../services/sales.service";
 import { cajaService } from "../../services/caja.service";
 import { getErrorMessage } from "../../utils/error";
 import type { Product, Category, Customer, Warehouse, Sale, SaleCreate } from "../../types";
+import { TAX_RATE } from "../../utils/tax";
 import ProductGrid from "./components/ProductGrid";
 import OrderSummary from "./components/OrderSummary";
+import CartDrawer from "../../components/common/CartDrawer";
 import ReceiptModal from "./components/ReceiptModal";
 import SaleReviewModal from "./components/SaleReviewModal";
 import ProductDetailModal from "./components/ProductDetailModal";
@@ -52,6 +55,7 @@ export default function SalesIndex() {
 
   const abortRef = useRef<AbortController | null>(null);
   const invAbortRef = useRef<AbortController | null>(null);
+  const prevWarehouseIdRef = useRef<number | null>(null);
 
   const fetchData = useCallback(async () => {
     abortRef.current?.abort();
@@ -77,6 +81,7 @@ export default function SalesIndex() {
         : [];
       setWarehouses(userWarehouses);
     } catch (error) {
+      if (axios.isCancel(error)) return;
       const message = getErrorMessage(error, "Error al cargar los datos.");
       showToast({ type: "error", message });
     }
@@ -88,26 +93,27 @@ export default function SalesIndex() {
   }, [fetchData]);
 
   // Fetch inventory for selected warehouse
+  const fetchInventory = useCallback(async (signal?: AbortSignal) => {
+    if (!selectedWarehouse) return;
+    try {
+      const items = await inventoryService.getByWarehouse(selectedWarehouse.id, signal);
+      const map = new Map<number, number>();
+      items.forEach((item) => map.set(item.product_id, item.quantity));
+      setWarehouseInventory(map);
+    } catch {
+      if (signal?.aborted) return;
+      setWarehouseInventory(new Map());
+    }
+  }, [selectedWarehouse]);
+
   useEffect(() => {
     if (!selectedWarehouse) return;
     invAbortRef.current?.abort();
     const controller = new AbortController();
     invAbortRef.current = controller;
-
-    const fetchInventory = async () => {
-      try {
-        const items = await inventoryService.getByWarehouse(selectedWarehouse.id, controller.signal);
-        const map = new Map<number, number>();
-        items.forEach((item) => map.set(item.product_id, item.quantity));
-        setWarehouseInventory(map);
-      } catch {
-        if (controller.signal.aborted) return;
-        setWarehouseInventory(new Map());
-      }
-    };
-    fetchInventory();
+    fetchInventory(controller.signal);
     return () => { controller.abort(); };
-  }, [selectedWarehouse]);
+  }, [selectedWarehouse, fetchInventory]);
 
   // Check for open cash session when warehouse is selected
   useEffect(() => {
@@ -124,6 +130,18 @@ export default function SalesIndex() {
       }
     };
     checkSession();
+  }, [selectedWarehouse]);
+
+  // Clear cart when switching warehouses (not on initial selection)
+  useEffect(() => {
+    if (prevWarehouseIdRef.current !== null && prevWarehouseIdRef.current !== selectedWarehouse?.id) {
+      setCart([]);
+      setSelectedCustomer(null);
+      setPaymentMethod("");
+      setNotes("");
+      setShowValidation(false);
+    }
+    prevWarehouseIdRef.current = selectedWarehouse?.id ?? null;
   }, [selectedWarehouse]);
 
   const addToCart = useCallback((product: Product, quantity: number = 1) => {
@@ -144,9 +162,18 @@ export default function SalesIndex() {
   }, []);
 
   const handleAddToCartFromModal = useCallback((product: Product, quantity: number) => {
+    const currentInCart = cart.find((i) => i.product.id === product.id)?.quantity ?? 0;
+    const stock = warehouseInventory.get(product.id) ?? 0;
+    const available = Math.max(0, stock - currentInCart);
+
+    if (quantity > available) {
+      showToast({ type: "error", message: `Stock insuficiente. Disponible: ${available}` });
+      return;
+    }
+
     addToCart(product, quantity);
     showToast({ type: "success", message: `${quantity} x ${product.name} agregado al carrito.` });
-  }, [addToCart, showToast]);
+  }, [addToCart, showToast, cart, warehouseInventory]);
 
   const updateCartItem = useCallback((productId: number, quantity: number, discount: number) => {
     setCart((prev) =>
@@ -160,8 +187,6 @@ export default function SalesIndex() {
 
   const clearCart = useCallback(() => {
     setCart([]);
-    setSelectedCustomer(null);
-    setSelectedWarehouse(null);
     setPaymentMethod("");
     setNotes("");
     setShowValidation(false);
@@ -212,13 +237,14 @@ export default function SalesIndex() {
       setLastSale(sale);
       setShowReceipt(true);
       showToast({ type: "success", message: "Venta registrada exitosamente." });
+      fetchInventory();
     } catch (error) {
       const message = getErrorMessage(error, "Error al registrar la venta.");
       showToast({ type: "error", message });
     } finally {
       setSubmitting(false);
     }
-  }, [cart, selectedCustomer, selectedWarehouse, paymentMethod, notes, showToast, hasOpenSession]);
+  }, [cart, selectedCustomer, selectedWarehouse, paymentMethod, notes, showToast, hasOpenSession, fetchInventory]);
 
   const handleNewSale = useCallback(() => {
     setShowReceipt(false);
@@ -233,6 +259,18 @@ export default function SalesIndex() {
       }
     }
   }, [cart.length, clearCart]);
+
+  const cartTotal = useMemo(() =>
+    cart.reduce((sum, item) => {
+      const price = typeof item.product.unit_price === "string"
+        ? parseFloat(item.product.unit_price)
+        : item.product.unit_price;
+      const discount = item.discount || 0;
+      const subtotal = price * item.quantity - discount;
+      return sum + subtotal + subtotal * TAX_RATE;
+    }, 0),
+    [cart]
+  );
 
   const customerName = useMemo(() => {
     if (selectedCustomer) return `${selectedCustomer.first_name} ${selectedCustomer.last_name}`;
@@ -263,31 +301,37 @@ export default function SalesIndex() {
             onCategoryChange={setSelectedCategory}
             onAddToCart={addToCart}
             onProductClick={handleProductClick}
+            cart={cart}
           />
         </div>
         <div className="xl:col-span-1">
-          <OrderSummary
-            cart={cart}
-            customers={customers}
-            selectedCustomer={selectedCustomer}
-            selectedWarehouse={selectedWarehouse}
-            warehouses={warehouses}
-            paymentMethod={paymentMethod}
-            submitting={submitting}
-            warehouseInventory={warehouseInventory}
-            showValidation={showValidation}
-            notes={notes}
-            hasNoWarehouses={warehouses.length === 0}
-            hasOpenSession={hasOpenSession}
-            onSelectCustomer={setSelectedCustomer}
-            onSelectWarehouse={setSelectedWarehouse}
-            onUpdateCart={updateCartItem}
-            onRemoveFromCart={removeFromCart}
-            onPaymentMethodChange={setPaymentMethod}
-            onNotesChange={setNotes}
-            onConfirm={openReview}
-            onCancel={handleCancel}
-          />
+          <CartDrawer
+            itemCount={cart.reduce((s, i) => s + i.quantity, 0)}
+            total={cartTotal}
+          >
+            <OrderSummary
+              cart={cart}
+              customers={customers}
+              selectedCustomer={selectedCustomer}
+              selectedWarehouse={selectedWarehouse}
+              warehouses={warehouses}
+              paymentMethod={paymentMethod}
+              submitting={submitting}
+              warehouseInventory={warehouseInventory}
+              showValidation={showValidation}
+              notes={notes}
+              hasNoWarehouses={warehouses.length === 0}
+              hasOpenSession={hasOpenSession}
+              onSelectCustomer={setSelectedCustomer}
+              onSelectWarehouse={setSelectedWarehouse}
+              onUpdateCart={updateCartItem}
+              onRemoveFromCart={removeFromCart}
+              onPaymentMethodChange={setPaymentMethod}
+              onNotesChange={setNotes}
+              onConfirm={openReview}
+              onCancel={handleCancel}
+            />
+          </CartDrawer>
         </div>
       </div>
 
@@ -315,6 +359,9 @@ export default function SalesIndex() {
         product={selectedProduct}
         category={selectedProduct ? categoryMap.get(selectedProduct.category_id) : undefined}
         stockQuantity={selectedProduct ? (warehouseInventory.get(selectedProduct.id) ?? 0) : 0}
+        availableStock={selectedProduct
+          ? Math.max(0, (warehouseInventory.get(selectedProduct.id) ?? 0) - (cart.find((i) => i.product.id === selectedProduct.id)?.quantity ?? 0))
+          : 0}
         onClose={() => setShowProductDetail(false)}
         onAddToCart={handleAddToCartFromModal}
       />

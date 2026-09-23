@@ -3,6 +3,12 @@ import SearchInput from "../../../components/common/SearchInput";
 import ProductCard from "./ProductCard";
 import type { Product, Category } from "../../../types";
 
+interface CartItem {
+  product: Product;
+  quantity: number;
+  discount: number;
+}
+
 interface ProductGridProps {
   products: Product[];
   categories: Category[];
@@ -14,6 +20,7 @@ interface ProductGridProps {
   onCategoryChange: (cat: number | "all") => void;
   onAddToCart: (product: Product) => void;
   onProductClick: (product: Product) => void;
+  cart: CartItem[];
 }
 
 export default function ProductGrid({
@@ -27,6 +34,7 @@ export default function ProductGrid({
   onCategoryChange,
   onAddToCart,
   onProductClick,
+  cart,
 }: ProductGridProps) {
   const filtered = useMemo(() => {
     return products.filter((p) => {
@@ -100,17 +108,23 @@ export default function ProductGrid({
         </div>
       ) : (
         <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
-          {filtered.map((product) => (
+          {filtered.map((product) => {
+            const stockQuantity = warehouseInventory.get(product.id) ?? 0;
+            const cartQty = cart.find((i) => i.product.id === product.id)?.quantity ?? 0;
+            const availableStock = Math.max(0, stockQuantity - cartQty);
+            return (
             <ProductCard
               key={product.id}
               product={product}
               category={categoryMap.get(product.category_id)}
-              stockQuantity={warehouseInventory.get(product.id) ?? 0}
+              stockQuantity={stockQuantity}
+              availableStock={availableStock}
               warehouseSelected={warehouseSelected}
               onAdd={() => onAddToCart(product)}
               onClick={() => onProductClick(product)}
             />
-          ))}
+            );
+          })}
         </div>
       )}
     </div>
