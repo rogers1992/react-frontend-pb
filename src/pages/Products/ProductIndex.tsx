@@ -4,6 +4,7 @@ import PageBreadcrumb from "../../components/common/PageBreadCrumb";
 import DataTable from "../../components/common/DataTable";
 import ConfirmDialog from "../../components/common/ConfirmDialog";
 import Button from "../../components/ui/button/Button";
+import Checkbox from "../../components/form/input/Checkbox";
 import { PlusIcon } from "../../icons";
 import { useToast } from "../../context/ToastContext";
 import { productService } from "../../services/product.service";
@@ -28,6 +29,7 @@ export default function ProductIndex() {
   const [suppliers, setSuppliers] = useState<Supplier[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState("");
+  const [showInactive, setShowInactive] = useState(false);
 
   const [page, setPage] = useState(0);
   const [pageSize, setPageSize] = useState(10);
@@ -51,6 +53,7 @@ export default function ProductIndex() {
               skip,
               currentPageSize,
               searchQuery || undefined,
+              showInactive,
             ),
             categoryService.getAll(),
             supplierService.getAll(),
@@ -67,12 +70,16 @@ export default function ProductIndex() {
         setLoading(false);
       }
     },
-    [showToast, searchQuery],
+    [showToast, searchQuery, showInactive],
   );
 
   useEffect(() => {
     fetchData(page, pageSize);
   }, [page, pageSize, fetchData]);
+
+  useEffect(() => {
+    setPage(0);
+  }, [showInactive]);
 
   //- Translation: "When the user types in search, go back to page 1 and fetch"
   //- Why? Because search results might only be 1 page
@@ -108,12 +115,16 @@ export default function ProductIndex() {
 
   const handleSubmitForm = async ({
     data,
-    imageFile,
-    removeExistingImage,
+    pendingFiles,
+    removedImageIds,
+    primaryImageId,
+    reorderedImages,
   }: {
     data: ProductCreate | ProductUpdate;
-    imageFile: File | null;
-    removeExistingImage: boolean;
+    pendingFiles: File[];
+    removedImageIds: number[];
+    primaryImageId: number | null;
+    reorderedImages: { id: number; sort_order: number }[];
   }) => {
     try {
       setFormLoading(true);
@@ -137,26 +148,37 @@ export default function ProductIndex() {
         savedProduct = created;
       }
 
-      // ---- Two-step: now handle the image (only against the saved product) ----
-      if (imageFile) {
+      // Handle removed images
+      for (const imageId of removedImageIds) {
         try {
-          await productService.uploadImage(savedProduct.id, imageFile);
+          await productService.deleteImage(savedProduct.id, imageId);
         } catch (error) {
-          // The product itself was saved; surface the image failure but keep going.
-          const message = getErrorMessage(
-            error,
-            "El producto se guardo pero la imagen no pudo subirse.",
-          );
+          const message = getErrorMessage(error, "No se pudo eliminar una imagen.");
           showToast({ type: "error", message });
         }
-      } else if (removeExistingImage && savedProduct.image_url) {
+      }
+
+      // Upload pending files
+      for (let i = 0; i < pendingFiles.length; i++) {
         try {
-          await productService.removeImage(savedProduct.id);
+          const isPrimary = primaryImageId === null && i === 0;
+          await productService.addImage(savedProduct.id, pendingFiles[i], isPrimary, i);
         } catch (error) {
-          const message = getErrorMessage(
-            error,
-            "No se pudo eliminar la imagen.",
-          );
+          const message = getErrorMessage(error, "El producto se guardo pero una imagen no pudo subirse.");
+          showToast({ type: "error", message });
+        }
+      }
+
+      // Reorder existing images and update primary
+      for (const img of reorderedImages) {
+        try {
+          const isPrimary = primaryImageId === img.id;
+          await productService.updateImage(savedProduct.id, img.id, {
+            sortOrder: img.sort_order,
+            isPrimary,
+          });
+        } catch (error) {
+          const message = getErrorMessage(error, "No se pudo actualizar el orden de las imagenes.");
           showToast({ type: "error", message });
         }
       }
@@ -182,12 +204,12 @@ export default function ProductIndex() {
       await productService.delete(deleteTarget.id);
       showToast({
         type: "success",
-        message: "Producto eliminado exitosamente.",
+        message: "Producto archivado exitosamente.",
       });
       setDeleteTarget(null);
       await refreshData();
     } catch (error) {
-      const message = getErrorMessage(error, "Error al eliminar el producto.");
+      const message = getErrorMessage(error, "Error al archivar el producto.");
       showToast({ type: "error", message });
     } finally {
       setDeleteLoading(false);
@@ -227,14 +249,21 @@ export default function ProductIndex() {
           setPage(0);
         }}
         actions={
-          <Button
-            size="sm"
-            variant="primary"
-            startIcon={<PlusIcon />}
-            onClick={handleOpenCreate}
-          >
-            Agregar Producto
-          </Button>
+          <div className="flex items-center gap-4">
+            <Checkbox
+              label="Mostrar inactivos"
+              checked={showInactive}
+              onChange={setShowInactive}
+            />
+            <Button
+              size="sm"
+              variant="primary"
+              startIcon={<PlusIcon />}
+              onClick={handleOpenCreate}
+            >
+              Agregar Producto
+            </Button>
+          </div>
         }
       />
 
@@ -252,9 +281,9 @@ export default function ProductIndex() {
         isOpen={!!deleteTarget}
         onClose={() => setDeleteTarget(null)}
         onConfirm={handleConfirmDelete}
-        title="Eliminar Producto"
-        message={`Esta seguro de eliminar "${deleteTarget?.name}"? Esta accion no se puede deshacer.`}
-        confirmText="Eliminar"
+        title="Archivar Producto"
+        message={`Esta seguro de archivar "${deleteTarget?.name}"? El producto se desactivara y no aparecera en la lista principal, pero sus ventas e historial se conservan. Puede reactivarlo mas tarde.`}
+        confirmText="Archivar"
         cancelText="Cancelar"
         variant="danger"
         loading={deleteLoading}

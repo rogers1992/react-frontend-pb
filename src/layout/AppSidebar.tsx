@@ -5,7 +5,6 @@ import { Link, useLocation } from "react-router";
 import {
   BoxCubeIcon,
   ChevronDownIcon,
-  GridIcon,
   HorizontaLDots,
   ProductsIcon,
   InventoryIcon,
@@ -13,7 +12,11 @@ import {
   CustomerIcon,
   ReportsIcon,
   ConfigurationIcon,
-  AlertIcon,
+  DollarLineIcon,
+  PieChartIcon,
+  CashRegisterIcon,
+  ExpensesIcon,
+  BellIcon,
 } from "../icons";
 import { useSidebar } from "../context/SidebarContext";
 import { usePermissions } from "../hooks/usePermissions";
@@ -27,20 +30,23 @@ type NavItem = {
   icon: React.ReactNode;
   path?: string;
   permission?: NavPermission;
+  adminOnly?: boolean;
   subItems?: {
     name: string;
     path: string;
     pro?: boolean;
     new?: boolean;
     permission?: NavPermission;
+    adminOnly?: boolean;
   }[];
 };
 
 const navItems: NavItem[] = [
   {
-    icon: <GridIcon />,
-    name: "Dashboard",
-    subItems: [{ name: "Ecommerce", path: "/", pro: false }],
+    icon: <PieChartIcon />,
+    name: "Analíticas",
+    path: "/dashboard",
+    permission: { resource: "reports", action: "read" },
   },
   //Adding principal items to the sidebar
   {
@@ -62,12 +68,23 @@ const navItems: NavItem[] = [
     icon: <BoxCubeIcon />,
     name: "Almacenes",
     path: "/warehouses",
+    permission: { resource: "inventory", action: "read" },
+  },
+  {
+    icon: <DollarLineIcon />,
+    name: "Ventas",
+    subItems: [
+      { name: "Historial de Ventas", path: "/sales", pro: false, permission: { resource: "sales", action: "read" } },
+      { name: "Punto de Venta", path: "/sales/new", pro: false, permission: { resource: "sales", action: "read" } },
+    ],
   },
   {
     icon: <SalesIcon />,
-    name: "Ventas",
-    path: "/sales",
-    permission: { resource: "sales", action: "read" },
+    name: "Compras",
+    subItems: [
+      { name: "Historial de Compras", path: "/purchases", pro: false, permission: { resource: "purchases", action: "read" } },
+      { name: "Nueva Compra", path: "/purchases/new", pro: false, permission: { resource: "purchases", action: "create" } },
+    ],
   },
   {
     icon: <CustomerIcon />,
@@ -82,7 +99,24 @@ const navItems: NavItem[] = [
     permission: { resource: "reports", action: "read" },
   },
   {
-    icon: <AlertIcon />,
+    icon: <CashRegisterIcon />,
+    name: "Caja",
+    subItems: [
+      { name: "Caja", path: "/caja", pro: false, permission: { resource: "cash_register", action: "read" } },
+      { name: "Movimientos", path: "/caja/movements", pro: false, permission: { resource: "cash_register", action: "read" } },
+      { name: "Historial", path: "/caja/history", pro: false, permission: { resource: "cash_register", action: "read" } },
+    ],
+  },
+  {
+    icon: <ExpensesIcon />,
+    name: "Gastos",
+    subItems: [
+      { name: "Gastos Operacionales", path: "/expenses", pro: false, permission: { resource: "expenses", action: "read" } },
+      { name: "Estado de Resultados", path: "/income-statement", pro: false, permission: { resource: "expenses", action: "read" } },
+    ],
+  },
+  {
+    icon: <BellIcon />,
     name: "Notificaciones",
     path: "/notifications",
   },
@@ -170,9 +204,9 @@ const othersItems: NavItem[] = [
 ];
 
 const AppSidebar: React.FC = () => {
-  const { isExpanded, isMobileOpen, isHovered, setIsHovered } = useSidebar();
+  const { isExpanded, isMobileOpen, isHovered, setIsHovered, toggleMobileSidebar } = useSidebar();
   const location = useLocation();
-  const { can } = usePermissions();
+  const { can, hasRole } = usePermissions();
 
   const [openSubmenu, setOpenSubmenu] = useState<{
     type: "main" | "others";
@@ -185,11 +219,14 @@ const AppSidebar: React.FC = () => {
 
   // Permission-aware filtering: hide items/sub-items the current user
   // cannot access. Parent dropdowns with no visible sub-items are hidden.
+  // adminOnly items are only visible to users with the "admin" role.
   const visibleNavItems = useMemo(() => {
     const filterItem = (item: NavItem): NavItem | null => {
       if (item.subItems) {
         const visibleSubs = item.subItems.filter(
-          (s) => !s.permission || can(s.permission.resource, s.permission.action),
+          (s) =>
+            (!s.permission || can(s.permission.resource, s.permission.action)) &&
+            (!s.adminOnly || hasRole("admin")),
         );
         if (visibleSubs.length === 0) return null;
         return { ...item, subItems: visibleSubs };
@@ -197,10 +234,13 @@ const AppSidebar: React.FC = () => {
       if (item.permission && !can(item.permission.resource, item.permission.action)) {
         return null;
       }
+      if (item.adminOnly && !hasRole("admin")) {
+        return null;
+      }
       return item;
     };
     return navItems.map(filterItem).filter((i): i is NavItem => i !== null);
-  }, [can]);
+  }, [can, hasRole]);
 
   const visibleOthersItems = useMemo(
     () => othersItems.filter((i) => !i.permission || can(i.permission.resource, i.permission.action)),
@@ -248,6 +288,13 @@ const AppSidebar: React.FC = () => {
       }
     }
   }, [openSubmenu]);
+
+  // Close mobile sidebar on navigation
+  useEffect(() => {
+    if (isMobileOpen) {
+      toggleMobileSidebar();
+    }
+  }, [location.pathname]); // eslint-disable-next-line react-hooks/exhaustive-deps
 
   const handleSubmenuToggle = (index: number, menuType: "main" | "others") => {
     setOpenSubmenu((prevOpenSubmenu) => {
@@ -330,7 +377,7 @@ const AppSidebar: React.FC = () => {
               ref={(el) => {
                 subMenuRefs.current[`${menuType}-${index}`] = el;
               }}
-              className="overflow-hidden transition-all duration-300"
+              className="overflow-hidden transition-all duration-300 relative z-10"
               style={{
                 height:
                   openSubmenu?.type === menuType && openSubmenu?.index === index

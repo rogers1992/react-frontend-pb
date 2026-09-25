@@ -1,0 +1,1344 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Manual de Usuario - Paraiso Biker</title>
+  <style>
+    :root {
+      --brand: #D15700;
+      --brand-dark: #fc5c06;
+      --dark: #2a2f29;
+      --cream: #fffff3;
+      --gray-100: #f3f4f6;
+      --gray-200: #e5e7eb;
+      --gray-500: #6b7280;
+      --gray-700: #374151;
+      --gray-900: #111827;
+    }
+
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, sans-serif;
+      font-size: 11pt;
+      line-height: 1.6;
+      color: var(--gray-700);
+      background: white;
+    }
+
+    /* Cover Page */
+    .cover {
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      align-items: center;
+      text-align: center;
+      background: linear-gradient(135deg, var(--dark) 0%, #1a1f1d 100%);
+      color: var(--cream);
+      padding: 40px;
+    }
+
+    .cover-logo {
+      font-size: 48pt;
+      font-weight: 800;
+      color: var(--brand);
+      margin-bottom: 10px;
+    }
+
+    .cover-title {
+      font-size: 36pt;
+      font-weight: 700;
+      margin-bottom: 20px;
+    }
+
+    .cover-subtitle {
+      font-size: 18pt;
+      color: var(--gray-500);
+      margin-bottom: 40px;
+    }
+
+    .cover-info {
+      margin-top: 60px;
+      font-size: 12pt;
+      color: var(--gray-500);
+    }
+
+    .cover-info p {
+      margin: 5px 0;
+    }
+
+    /* Navigation / TOC */
+    .toc {
+      background: var(--gray-100);
+      padding: 40px;
+      margin: 20px;
+      border-radius: 8px;
+    }
+
+    .toc h2 {
+      color: var(--dark);
+      margin-bottom: 20px;
+      padding-bottom: 10px;
+      border-bottom: 2px solid var(--brand);
+    }
+
+    .toc-grid {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 10px 40px;
+    }
+
+    .toc a {
+      color: var(--brand);
+      text-decoration: none;
+      padding: 5px 0;
+      display: block;
+    }
+
+    .toc a:hover {
+      color: var(--brand-dark);
+      text-decoration: underline;
+    }
+
+    /* Sections */
+    .section {
+      padding: 40px;
+      max-width: 900px;
+      margin: 0 auto;
+    }
+
+    .section h1 {
+      font-size: 24pt;
+      color: var(--dark);
+      margin-bottom: 20px;
+      padding-bottom: 10px;
+      border-bottom: 3px solid var(--brand);
+    }
+
+    .section h2 {
+      font-size: 16pt;
+      color: var(--dark);
+      margin-top: 30px;
+      margin-bottom: 15px;
+    }
+
+    .section h3 {
+      font-size: 13pt;
+      color: var(--gray-700);
+      margin-top: 20px;
+      margin-bottom: 10px;
+    }
+
+    .section p {
+      margin-bottom: 15px;
+    }
+
+    .section ul, .section ol {
+      margin-left: 25px;
+      margin-bottom: 15px;
+    }
+
+    .section li {
+      margin-bottom: 8px;
+    }
+
+    /* Info Boxes */
+    .info-box {
+      background: var(--gray-100);
+      border-left: 4px solid var(--brand);
+      padding: 15px 20px;
+      margin: 20px 0;
+      border-radius: 0 8px 8px 0;
+    }
+
+    .info-box.warning {
+      background: #fef3cd;
+      border-left-color: #ffc107;
+    }
+
+    .info-box.success {
+      background: #d4edda;
+      border-left-color: #28a745;
+    }
+
+    .info-box-title {
+      font-weight: 700;
+      color: var(--dark);
+      margin-bottom: 5px;
+    }
+
+    /* Tables */
+    .table-wrapper {
+      overflow-x: auto;
+      margin: 20px 0;
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 10pt;
+    }
+
+    th {
+      background: var(--dark);
+      color: var(--cream);
+      padding: 12px 15px;
+      text-align: left;
+      font-weight: 600;
+    }
+
+    td {
+      padding: 10px 15px;
+      border-bottom: 1px solid var(--gray-200);
+    }
+
+    tr:nth-child(even) {
+      background: var(--gray-100);
+    }
+
+    /* Screenshots Placeholder */
+    .screenshot {
+      background: var(--gray-100);
+      border: 2px dashed var(--gray-500);
+      border-radius: 8px;
+      padding: 40px;
+      margin: 20px 0;
+      text-align: center;
+    }
+
+    .screenshot img {
+      max-width: 100%;
+      height: auto;
+      border-radius: 4px;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+    }
+
+    .screenshot-icon {
+      font-size: 48px;
+      margin-bottom: 15px;
+      color: var(--gray-500);
+    }
+
+    .screenshot-label {
+      font-size: 12pt;
+      font-weight: 600;
+      color: var(--gray-700);
+      margin-bottom: 5px;
+    }
+
+    .screenshot-desc {
+      font-size: 10pt;
+      color: var(--gray-500);
+    }
+
+    /* Steps */
+    .steps {
+      counter-reset: step;
+    }
+
+    .step {
+      position: relative;
+      padding-left: 50px;
+      margin-bottom: 25px;
+    }
+
+    .step::before {
+      counter-increment: step;
+      content: counter(step);
+      position: absolute;
+      left: 0;
+      top: 0;
+      width: 32px;
+      height: 32px;
+      background: var(--brand);
+      color: white;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-weight: 700;
+      font-size: 14pt;
+    }
+
+    .step-title {
+      font-weight: 700;
+      color: var(--dark);
+      margin-bottom: 5px;
+    }
+
+    /* Role Tags */
+    .role-tag {
+      display: inline-block;
+      padding: 3px 10px;
+      border-radius: 15px;
+      font-size: 9pt;
+      font-weight: 600;
+      margin-right: 5px;
+    }
+
+    .role-tag.admin {
+      background: var(--brand);
+      color: white;
+    }
+
+    .role-tag.vendedor {
+      background: #3b82f6;
+      color: white;
+    }
+
+    .role-tag.inventario {
+      background: #10b981;
+      color: white;
+    }
+
+    .role-tag.compras {
+      background: #8b5cf6;
+      color: white;
+    }
+
+    /* Page Breaks */
+    .page-break {
+      page-break-before: always;
+    }
+
+    .no-print {
+      display: none;
+    }
+
+    /* Print Header/Footer */
+    @page {
+      margin: 2cm;
+      size: A4;
+    }
+
+    /* Quick Reference */
+    .quick-ref {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 15px;
+      margin: 20px 0;
+    }
+
+    .quick-ref-item {
+      background: var(--gray-100);
+      padding: 15px;
+      border-radius: 8px;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .quick-ref-icon {
+      font-size: 24px;
+    }
+
+    .quick-ref-text {
+      font-size: 10pt;
+    }
+
+    .quick-ref-title {
+      font-weight: 700;
+      color: var(--dark);
+    }
+
+    /* Footer */
+    .footer {
+      text-align: center;
+      padding: 40px;
+      color: var(--gray-500);
+      font-size: 10pt;
+      border-top: 1px solid var(--gray-200);
+      margin-top: 40px;
+    }
+
+    /* Print button */
+    .print-btn {
+      position: fixed;
+      bottom: 20px;
+      right: 20px;
+      background: var(--brand);
+      color: white;
+      border: none;
+      padding: 15px 25px;
+      border-radius: 50px;
+      font-size: 14pt;
+      font-weight: 700;
+      cursor: pointer;
+      box-shadow: 0 4px 15px rgba(209, 87, 0, 0.4);
+      z-index: 1000;
+    }
+
+    .print-btn:hover {
+      background: var(--brand-dark);
+    }
+
+    @media print {
+      .print-btn {
+        display: none;
+      }
+
+      .section {
+        padding: 20px 0;
+      }
+
+      .page-break {
+        page-break-before: always;
+      }
+
+      h1 {
+        page-break-before: always;
+      }
+    }
+  </style>
+</head>
+<body>
+
+  <!-- Cover Page -->
+  <div class="cover">
+    <div class="cover-logo">PARAISO BIKER</div>
+    <h1 class="cover-title">Manual de Usuario</h1>
+    <p class="cover-subtitle">Sistema de Gestión Integral</p>
+    <div class="cover-info">
+      <p><strong>Versión:</strong> 1.0</p>
+      <p><strong>Fecha:</strong> Julio 2026</p>
+      <p>&copy; Paraiso Biker. Todos los derechos reservados.</p>
+    </div>
+  </div>
+
+  <!-- Table of Contents -->
+  <div class="section" id="indice">
+    <h1>Tabla de Contenidos</h1>
+    <div class="toc">
+      <div class="toc-grid">
+        <a href="#introduccion">1. Introducción</a>
+        <a href="#inicio-sesion">2. Inicio de Sesión</a>
+        <a href="#dashboard">3. Dashboard</a>
+        <a href="#productos">4. Productos</a>
+        <a href="#categorias">5. Categorías</a>
+        <a href="#proveedores">6. Proveedores</a>
+        <a href="#inventario">7. Inventario</a>
+        <a href="#almacenes">8. Almacenes</a>
+        <a href="#pos">9. Punto de Venta</a>
+        <a href="#ventas">10. Historial de Ventas</a>
+        <a href="#compras">11. Compras</a>
+        <a href="#clientes">12. Clientes</a>
+        <a href="#reportes">13. Reportes</a>
+        <a href="#notificaciones">14. Notificaciones</a>
+        <a href="#usuarios">15. Gestión de Usuarios</a>
+        <a href="#roles">16. Gestión de Roles</a>
+        <a href="#perfil">17. Mi Perfil</a>
+      </div>
+    </div>
+  </div>
+
+  <!-- 1. Introducción -->
+  <div class="section page-break" id="introduccion">
+    <h1>1. Introducción</h1>
+
+    <h2>Bienvenido al Sistema Paraiso Biker</h2>
+    <p>Este manual describe las funcionalidades del sistema de gestión de Paraiso Biker. El sistema permite administrar productos, inventario, ventas, compras, clientes y más.</p>
+
+    <div class="info-box">
+      <div class="info-box-title">Nota Importante</div>
+      <p>Este manual está diseñado para todos los usuarios del sistema. Si tiene dudas sobre alguna funcionalidad, consulte con su administrador.</p>
+    </div>
+
+    <h2>Requisitos del Sistema</h2>
+    <ul>
+      <li>Navegador web moderno (Chrome, Firefox, Edge, Safari)</li>
+      <li>Conexión a internet para acceder al sistema</li>
+      <li>Resolución de pantalla mínima de 1024x768</li>
+    </ul>
+
+    <h2>Roles de Usuario</h2>
+    <p>El sistema cuenta con diferentes roles que determinan qué funciones puede realizar cada usuario:</p>
+
+    <table>
+      <thead>
+        <tr>
+          <th>Rol</th>
+          <th>Descripción</th>
+          <th>Acceso Principal</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td><span class="role-tag admin">Administrador</span></td>
+          <td>Control total del sistema</td>
+          <td>Todas las funciones</td>
+        </tr>
+        <tr>
+          <td><span class="role-tag vendedor">Vendedor</span></td>
+          <td>Gestión de ventas</td>
+          <td>POS, Ventas, Clientes, Productos</td>
+        </tr>
+        <tr>
+          <td><span class="role-tag inventario">Inventario</span></td>
+          <td>Gestión de stock</td>
+          <td>Inventario, Almacenes, Productos</td>
+        </tr>
+        <tr>
+          <td><span class="role-tag compras">Compras</span></td>
+          <td>Gestión de proveedores</td>
+          <td>Compras, Inventario</td>
+        </tr>
+      </tbody>
+    </table>
+
+    <h2>Cómo Usar Este Manual</h2>
+    <ul>
+      <li>Use la tabla de contenidos para navegar a la sección deseada</li>
+      <li>Cada sección incluye capturas de pantalla como referencia visual</li>
+      <li>Los iconos <span class="role-tag admin">ADMIN</span> indican funciones exclusivas del administrador</li>
+      <li>Para imprimir este manual, haga clic en el botón "Imprimir PDF" al final de la página</li>
+    </ul>
+  </div>
+
+  <!-- 2. Inicio de Sesión -->
+  <div class="section page-break" id="inicio-sesion">
+    <h1>2. Inicio de Sesión</h1>
+
+    <h2>Acceder al Sistema</h2>
+    <p>Para iniciar sesión en el sistema:</p>
+
+    <div class="steps">
+      <div class="step">
+        <div class="step-title">Abra su navegador web</div>
+        <p>Ingrese la URL proporcionada por su administrador (generalmente something como <code>http://servidor:5173</code>)</p>
+      </div>
+      <div class="step">
+        <div class="step-title">Ingrese sus credenciales</div>
+        <p>Escriba su nombre de usuario y contraseña en los campos correspondientes</p>
+      </div>
+      <div class="step">
+        <div class="step-title">Haga clic en "Iniciar Sesión"</div>
+        <p>Si sus credenciales son correctas, será redirigido al Dashboard principal</p>
+      </div>
+    </div>
+
+    <div class="screenshot">
+      <img src="manual-screenshots/01-login.png" alt="Captura: Pantalla de Login" />
+      <div class="screenshot-label">Captura: Pantalla de Login</div>
+      <div class="screenshot-desc">Imagen de referencia de la pantalla de inicio de sesión</div>
+    </div>
+
+    <h2>Cerrar Sesión</h2>
+    <p>Para cerrar sesión:</p>
+    <ol>
+      <li>Haga clic en su nombre/usuario en la esquina superior derecha</li>
+      <li>Seleccione la opción "Cerrar sesión"</li>
+      <li>Será redirigido a la pantalla de login</li>
+    </ol>
+
+    <div class="info-box warning">
+      <div class="info-box-title">⚠️ Importante</div>
+      <p>Siempre cierre sesión cuando termine de usar el sistema, especialmente en equipos compartidos.</p>
+    </div>
+
+    <h2>Recuperar Contraseña</h2>
+    <p>Si olvidó su contraseña, contacte a su administrador del sistema para que le sea asignada una nueva contraseña temporal.</p>
+  </div>
+
+  <!-- 3. Dashboard -->
+  <div class="section page-break" id="dashboard">
+    <h1>3. Dashboard</h1>
+
+    <p>El Dashboard es la página principal del sistema. Muestra métricas clave del negocio en tiempo real.</p>
+
+    <h2>Métricas Principales</h2>
+    <div class="quick-ref">
+      <div class="quick-ref-item">
+        <span class="quick-ref-icon">💰</span>
+        <div class="quick-ref-text">
+          <div class="quick-ref-title">Ingresos</div>
+          <div>Ventas del día, semana y mes</div>
+        </div>
+      </div>
+      <div class="quick-ref-item">
+        <span class="quick-ref-icon">📊</span>
+        <div class="quick-ref-text">
+          <div class="quick-ref-title">Ventas</div>
+          <div>Número de transacciones</div>
+        </div>
+      </div>
+      <div class="quick-ref-item">
+        <span class="quick-ref-icon">📦</span>
+        <div class="quick-ref-text">
+          <div class="quick-ref-title">Stock Bajo</div>
+          <div>Productos con inventario mínimo</div>
+        </div>
+      </div>
+      <div class="quick-ref-item">
+        <span class="quick-ref-icon">👥</span>
+        <div class="quick-ref-text">
+          <div class="quick-ref-title">Clientes Activos</div>
+          <div>Clientes registrados en el sistema</div>
+        </div>
+      </div>
+    </div>
+
+    <h2>Gráficos y Tendencias</h2>
+    <p>El Dashboard incluye gráficos de:</p>
+    <ul>
+      <li>Tendencia de ventas por período</li>
+      <li>Productos más vendidos</li>
+      <li>Rendimiento por categoría</li>
+    </ul>
+
+    <div class="screenshot">
+      <img src="manual-screenshots/02-dashboard.png" alt="Captura: Dashboard" />
+      <div class="screenshot-label">Captura: Dashboard</div>
+      <div class="screenshot-desc">Panel principal con métricas y gráficos</div>
+    </div>
+
+    <div class="info-box">
+      <div class="info-box-title">Acceso</div>
+      <p><span class="role-tag admin">Administrador</span> <span class="role-tag vendedor">Vendedor</span> <span class="role-tag inventario">Inventario</span> <span class="role-tag compras">Compras</span> Todos los usuarios pueden ver el Dashboard.</p>
+    </div>
+  </div>
+
+  <!-- 4. Productos -->
+  <div class="section page-break" id="productos">
+    <h1>4. Productos</h1>
+
+    <p>La sección de productos permite gestionar el catálogo de artículos de la tienda.</p>
+
+    <h2>Ver Lista de Productos</h2>
+    <p>Para acceder a la lista de productos:</p>
+    <ol>
+      <li>En el menú lateral, haga clic en "Productos"</li>
+      <li>Verá una tabla con todos los productos registrados</li>
+      <li>Use la barra de búsqueda para filtrar por nombre o SKU</li>
+    </ol>
+
+    <div class="screenshot">
+      <img src="manual-screenshots/03-productos.png" alt="Captura: Lista de Productos" />
+      <div class="screenshot-label">Captura: Lista de Productos</div>
+      <div class="screenshot-desc">Tabla con productos y opciones de filtrado</div>
+    </div>
+
+    <h2>Crear Nuevo Producto <span class="role-tag admin">ADMIN</span></h2>
+    <div class="steps">
+      <div class="step">
+        <div class="step-title">Acceda a Productos</div>
+        <p>Vaya al menú Productos</p>
+      </div>
+      <div class="step">
+        <div class="step-title">Haga clic en "Agregar Producto"</div>
+        <p>Botón ubicado en la esquina superior derecha</p>
+      </div>
+      <div class="step">
+        <div class="step-title">Complete los datos del formulario</div>
+        <p>Nombre, SKU, precio, categoría, proveedor, etc.</p>
+      </div>
+      <div class="step">
+        <div class="step-title">Guarde el producto</div>
+        <p>Haga clic en "Crear" para guardar</p>
+      </div>
+    </div>
+
+    <h2>Editar Producto <span class="role-tag admin">ADMIN</span></h2>
+    <ol>
+      <li>Busque el producto en la lista</li>
+      <li>Haga clic en el botón de editar (lápiz)</li>
+      <li>Modifique los campos deseados</li>
+      <li>Guarde los cambios</li>
+    </ol>
+
+    <h2>Activar/Desactivar Producto <span class="role-tag admin">ADMIN</span></h2>
+    <p>Los productos desactivados no aparecerán en el punto de venta pero se mantienen en el historial.</p>
+    <ol>
+      <li>Busque el producto en la lista</li>
+      <li>Haga clic en el botón de toggle (flecha circular)</li>
+      <li>Confirme la acción</li>
+    </ol>
+  </div>
+
+  <!-- 5. Categorías -->
+  <div class="section page-break" id="categorias">
+    <h1>5. Categorías</h1>
+
+    <p>Las categorías permiten organizar los productos por tipo o familia.</p>
+
+    <h2>Gestionar Categorías <span class="role-tag admin">ADMIN</span></h2>
+
+    <div class="steps">
+      <div class="step">
+        <div class="step-title">Acceda a Categorías</div>
+        <p>Menú: Productos → Categorías</p>
+      </div>
+      <div class="step">
+        <div class="step-title">Agregar Categoría</div>
+        <p>Haga clic en "Agregar" e ingrese el nombre</p>
+      </div>
+      <div class="step">
+        <div class="step-title">Editar/Eliminar</div>
+        <p>Use los botones de acción en cada fila de la tabla</p>
+      </div>
+    </div>
+
+    <div class="info-box">
+      <div class="info-box-title">Nota</div>
+      <p>No es posible eliminar una categoría que tenga productos asociados. Primero reasigne o elimine los productos.</p>
+    </div>
+  </div>
+
+  <!-- 6. Proveedores -->
+  <div class="section page-break" id="proveedores">
+    <h1>6. Proveedores</h1>
+
+    <p>Gestión de proveedores para las compras de inventario.</p>
+
+    <h2>Gestionar Proveedores <span class="role-tag admin">ADMIN</span></h2>
+
+    <div class="steps">
+      <div class="step">
+        <div class="step-title">Acceda a Proveedores</div>
+        <p>Menú: Productos → Proveedores</p>
+      </div>
+      <div class="step">
+        <div class="step-title">Agregar Proveedor</div>
+        <p>Complete: Nombre, contacto, email, teléfono, dirección</p>
+      </div>
+      <div class="step">
+        <div class="step-title">Guardar</div>
+        <p>Haga clic en "Crear" para guardar el proveedor</p>
+      </div>
+    </div>
+
+    <h2>Datos de Proveedor</h2>
+    <table>
+      <thead>
+        <tr>
+          <th>Campo</th>
+          <th>Descripción</th>
+          <th>¿Requerido?</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td>Nombre</td>
+          <td>Nombre o razón social del proveedor</td>
+          <td>Sí</td>
+        </tr>
+        <tr>
+          <td>Contacto</td>
+          <td>Nombre de la persona de contacto</td>
+          <td>No</td>
+        </tr>
+        <tr>
+          <td>Email</td>
+          <td>Correo electrónico</td>
+          <td>No</td>
+        </tr>
+        <tr>
+          <td>Teléfono</td>
+          <td>Número de contacto</td>
+          <td>No</td>
+        </tr>
+        <tr>
+          <td>Dirección</td>
+          <td>Dirección física del proveedor</td>
+          <td>No</td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+
+  <!-- 7. Inventario -->
+  <div class="section page-break" id="inventario">
+    <h1>7. Inventario</h1>
+
+    <p>Control de stock y niveles de producto en los almacenes.</p>
+
+    <h2>Ver Inventario</h2>
+    <p><span class="role-tag admin">ADMIN</span> <span class="role-tag inventario">INVENTARIO</span> pueden ver el inventario completo.</p>
+
+    <div class="screenshot">
+      <img src="manual-screenshots/06-inventario.png" alt="Captura: Inventario" />
+      <div class="screenshot-label">Captura: Inventario</div>
+      <div class="screenshot-desc">Lista de productos con cantidades y niveles</div>
+    </div>
+
+    <h2>Alertas de Stock Bajo</h2>
+    <p>Cuando un producto alcanza su nivel mínimo de stock, aparecerá en la sección de alertas con un indicador visual.</p>
+
+    <h2>Transferencias entre Almacenes <span class="role-tag admin">ADMIN</span></h2>
+    <div class="steps">
+      <div class="step">
+        <div class="step-title">Acceda a Transferencias</div>
+        <p>Desde la sección de Inventario</p>
+      </div>
+      <div class="step">
+        <div class="step-title">Seleccione Producto</div>
+        <p>Elija el producto a transferir</p>
+      </div>
+      <div class="step">
+        <div class="step-title">Indique Origen y Destino</div>
+        <p>Seleccione almacén de origen y destino</p>
+      </div>
+      <div class="step">
+        <div class="step-title">Ingrese Cantidad</div>
+        <p>Indique la cantidad a transferir</p>
+      </div>
+      <div class="step">
+        <div class="step-title">Confirme la Transferencia</div>
+        <p>Revise y confirme la operación</p>
+      </div>
+    </div>
+
+    <div class="info-box warning">
+      <div class="info-box-title">⚠️ Importante</div>
+      <p>Las transferencias no pueden deshacerse. Verifique que los datos sean correctos antes de confirmar.</p>
+    </div>
+  </div>
+
+  <!-- 8. Almacenes -->
+  <div class="section page-break" id="almacenes">
+    <h1>8. Almacenes</h1>
+
+    <p>Los almacenes representan las ubicaciones físicas donde se almacena el inventario.</p>
+
+    <h2>Ver Almacenes</h2>
+    <p><span class="role-tag admin">ADMIN</span> <span class="role-tag inventario">INVENTARIO</span> pueden ver la lista de almacenes.</p>
+
+    <div class="screenshot">
+      <img src="manual-screenshots/07-almacenes.png" alt="Captura: Almacenes" />
+      <div class="screenshot-label">Captura: Almacenes</div>
+      <div class="screenshot-desc">Lista de almacenes con ubicaciones</div>
+    </div>
+
+    <h2>Gestionar Almacenes <span class="role-tag admin">ADMIN</span></h2>
+    <p>Solo los administradores pueden crear, editar o desactivar almacenes.</p>
+
+    <table>
+      <thead>
+        <tr>
+          <th>Acción</th>
+          <th>Descripción</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td>Crear</td>
+          <td>Añadir un nuevo almacén al sistema</td>
+        </tr>
+        <tr>
+          <td>Editar</td>
+          <td>Modificar nombre o ubicación</td>
+        </tr>
+        <tr>
+          <td>Desactivar</td>
+          <td>Desactivar un almacén (no elimina productos)</td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+
+  <!-- 9. Punto de Venta -->
+  <div class="section page-break" id="pos">
+    <h1>9. Punto de Venta (POS)</h1>
+
+    <p>El POS permite realizar ventas de forma rápida y eficiente.</p>
+
+    <h2>Realizar una Venta</h2>
+    <div class="steps">
+      <div class="step">
+        <div class="step-title">Acceda al POS</div>
+        <p>Menú: Ventas → Punto de Venta</p>
+      </div>
+      <div class="step">
+        <div class="step-title">Busque el Producto</div>
+        <p>Use el campo de búsqueda por nombre, SKU o código de barras</p>
+      </div>
+      <div class="step">
+        <div class="step-title">Agregue al Carrito</div>
+        <p>Haga clic en el producto o presione Enter para agregarlo</p>
+      </div>
+      <div class="step">
+        <div class="step-title">Ajuste Cantidades</div>
+        <p>Modifique la cantidad si es necesario</p>
+      </div>
+      <div class="step">
+        <div class="step-title">Seleccione Cliente (opcional)</div>
+        <p>Busque y seleccione un cliente existente o registre uno nuevo</p>
+      </div>
+      <div class="step">
+        <div class="step-title">Seleccione Método de Pago</div>
+        <p>Efectivo, tarjeta, transferencia, etc.</p>
+      </div>
+      <div class="step">
+        <div class="step-title">Cobrar</div>
+        <p>Haga clic en "Cobrar" para completar la venta</p>
+      </div>
+    </div>
+
+    <div class="screenshot">
+      <img src="manual-screenshots/08-pos.png" alt="Captura: Punto de Venta" />
+      <div class="screenshot-label">Captura: Punto de Venta</div>
+      <div class="screenshot-desc">Interfaz del POS con búsqueda y carrito</div>
+    </div>
+
+    <div class="info-box success">
+      <div class="info-box-title">💡 Tip</div>
+      <p>Use el código de barras para agregar productos rápidamente. El sistema automáticamente actualiza el inventario.</p>
+    </div>
+
+    <h2>Métodos de Pago Disponibles</h2>
+    <ul>
+      <li><strong>Efectivo:</strong> Pago en moneda nacional</li>
+      <li><strong>Tarjeta:</strong> Débito o crédito</li>
+      <li><strong>Transferencia:</strong> Pago por transferencia bancaria</li>
+      <li><strong>Mixto:</strong> Combinación de métodos de pago</li>
+    </ul>
+
+    <div class="info-box">
+      <div class="info-box-title">Acceso</div>
+      <p><span class="role-tag admin">ADMIN</span> <span class="role-tag vendedor">VENDEDOR</span> pueden usar el POS.</p>
+    </div>
+  </div>
+
+  <!-- 10. Historial de Ventas -->
+  <div class="section page-break" id="ventas">
+    <h1>10. Historial de Ventas</h1>
+
+    <p>Ver todas las ventas realizadas en el sistema.</p>
+
+    <h2>Ver Historial</h2>
+    <p><span class="role-tag admin">ADMIN</span> <span class="role-tag vendedor">VENDEDOR</span> pueden ver el historial.</p>
+
+    <div class="screenshot">
+      <img src="manual-screenshots/09-historial-ventas.png" alt="Captura: Historial de Ventas" />
+      <div class="screenshot-label">Captura: Historial de Ventas</div>
+      <div class="screenshot-desc">Lista de ventas con filtros de fecha</div>
+    </div>
+
+    <h2>Filtrar Ventas</h2>
+    <ul>
+      <li><strong>Por fecha:</strong> Seleccione un rango de fechas</li>
+      <li><strong>Por cliente:</strong> Busque por nombre de cliente</li>
+      <li><strong>Por método de pago:</strong> filtre por efectivo, tarjeta, etc.</li>
+      <li><strong>Por estado:</strong> Completada, cancelada, pendiente</li>
+    </ul>
+
+    <h2>Ver Detalle de Venta</h2>
+    <ol>
+      <li>Haga clic en una venta de la lista</li>
+      <li>Se mostrará el detalle completo: productos, cantidades, precios, método de pago</li>
+      <li>Puede imprimir o exportar el comprobante</li>
+    </ol>
+
+    <h2>Cancelar Venta <span class="role-tag admin">ADMIN</span></h2>
+    <div class="info-box warning">
+      <div class="info-box-title">⚠️ Importante</div>
+      <p>Solo los administradores pueden cancelar ventas. La cancelación reversa el inventario.</p>
+    </div>
+  </div>
+
+  <!-- 11. Compras -->
+  <div class="section page-break" id="compras">
+    <h1>11. Compras</h1>
+
+    <p>Gestión de compras a proveedores para reponer inventario.</p>
+
+    <h2>Registrar Compra <span class="role-tag admin">ADMIN</span></h2>
+    <div class="steps">
+      <div class="step">
+        <div class="step-title">Acceda a Compras</div>
+        <p>Menú: Compras → Nueva Compra</p>
+      </div>
+      <div class="step">
+        <div class="step-title">Seleccione Proveedor</div>
+        <p>Elija el proveedor de la lista</p>
+      </div>
+      <div class="step">
+        <div class="step-title">Agregue Productos</div>
+        <p>Busque y agregue los productos a comprar</p>
+      </div>
+      <div class="step">
+        <div class="step-title">Indique Cantidades y Costos</div>
+        <p>Ingrese la cantidad y costo unitario de cada producto</p>
+      </div>
+      <div class="step">
+        <div class="step-title">Seleccione Almacén</div>
+        <p>Elija dónde se almacenará la mercancía</p>
+      </div>
+      <div class="step">
+        <div class="step-title">Confirme la Compra</div>
+        <p>Revise y guarde la orden de compra</p>
+      </div>
+    </div>
+
+    <div class="screenshot">
+      <img src="manual-screenshots/10-compras.png" alt="Captura: Nueva Compra" />
+      <div class="screenshot-label">Captura: Nueva Compra</div>
+      <div class="screenshot-desc">Formulario de registro de compra</div>
+    </div>
+
+    <h2>Estados de Compra</h2>
+    <table>
+      <thead>
+        <tr>
+          <th>Estado</th>
+          <th>Descripción</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td>Pendiente</td>
+          <td>Compra registrada, esperando recepción</td>
+        </tr>
+        <tr>
+          <td>Recibida</td>
+          <td>Mercancía recibida en almacén</td>
+        </tr>
+        <tr>
+          <td>Cancelada</td>
+          <td>Compra cancelada</td>
+        </tr>
+      </tbody>
+    </table>
+
+    <div class="info-box">
+      <div class="info-box-title">Acceso</div>
+      <p><span class="role-tag admin">ADMIN</span> <span class="role-tag compras">COMPRAS</span> pueden gestionar compras.</p>
+    </div>
+  </div>
+
+  <!-- 12. Clientes -->
+  <div class="section page-break" id="clientes">
+    <h1>12. Clientes</h1>
+
+    <p>Gestión de clientes y programa de lealtad.</p>
+
+    <h2>Ver Clientes</h2>
+    <p>Acceda a la lista de clientes desde el menú.</p>
+
+    <div class="screenshot">
+      <img src="manual-screenshots/11-clientes.png" alt="Captura: Lista de Clientes" />
+      <div class="screenshot-label">Captura: Lista de Clientes</div>
+      <div class="screenshot-desc">Tabla de clientes con información y puntos</div>
+    </div>
+
+    <h2>Agregar Cliente <span class="role-tag admin">ADMIN</span> <span class="role-tag vendedor">VENDEDOR</span></h2>
+    <div class="steps">
+      <div class="step">
+        <div class="step-title">Acceda a Clientes</div>
+        <p>Menú: Clientes</p>
+      </div>
+      <div class="step">
+        <div class="step-title">Haga clic en "Agregar Cliente"</div>
+        <p>Formulario para nuevo cliente</p>
+      </div>
+      <div class="step">
+        <div class="step-title">Complete los datos</div>
+        <p>Nombre, apellido, email, teléfono, fecha de nacimiento</p>
+      </div>
+      <div class="step">
+        <div class="step-title">Guarde el cliente</div>
+        <p>El cliente se registrará con 0 puntos initially</p>
+      </div>
+    </div>
+
+    <h2>Programa de Lealtad</h2>
+    <p>Los clientes acumulan puntos con cada compra que pueden canjear por descuentos.</p>
+
+    <table>
+      <thead>
+        <tr>
+          <th>Tier</th>
+          <th>Puntos Requeridos</th>
+          <th>Beneficios</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td>Bronce</td>
+          <td>0 - 499</td>
+          <td>Puntos base</td>
+        </tr>
+        <tr>
+          <td>Plata</td>
+          <td>500 - 999</td>
+          <td>10% bonus</td>
+        </tr>
+        <tr>
+          <td>Oro</td>
+          <td>1000+</td>
+          <td>20% bonus</td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+
+  <!-- 13. Reportes -->
+  <div class="section page-break" id="reportes">
+    <h1>13. Reportes</h1>
+
+    <p>Generación de reportes y análisis del negocio.</p>
+
+    <h2>Tipos de Reportes <span class="role-tag admin">ADMIN</span></h2>
+
+    <div class="screenshot">
+      <img src="manual-screenshots/12-reportes.png" alt="Captura: Reportes" />
+      <div class="screenshot-label">Captura: Reportes</div>
+      <div class="screenshot-desc">Selección de tipo de reporte</div>
+    </div>
+
+    <h2>Reporte de Ventas</h2>
+    <p>Análisis detallado de ventas por período, producto, categoría, vendedor.</p>
+
+    <h2>Reporte de Inventario</h2>
+    <p>Estado actual del inventario, productos más/menos vendidos, rotación.</p>
+
+    <h2>Reporte de Compras</h2>
+    <p>Compras por proveedor, gasto mensual, órdenes pendientes.</p>
+
+    <h2>Reporte de Clientes</h2>
+    <p>Clientes nuevos, clientes más activos, análisis de lealtad.</p>
+
+    <h2>Reporte de Productos</h2>
+    <p>Rendimiento de productos, márgenes, stock óptimo.</p>
+
+    <h2>Exportar Reportes</h2>
+    <p>Los reportes pueden exportarse a PDF o Excel para su análisis externo.</p>
+
+    <div class="info-box">
+      <div class="info-box-title">Acceso</div>
+      <p><span class="role-tag admin">ADMIN</span> pueden acceder a todos los reportes.</p>
+    </div>
+  </div>
+
+  <!-- 14. Notificaciones -->
+  <div class="section page-break" id="notificaciones">
+    <h1>14. Notificaciones</h1>
+
+    <p>Alertas del sistema para mantener informado al usuario.</p>
+
+    <h2>Ver Notificaciones</h2>
+    <p>El icono de campana en la esquina superior derecha muestra las notificaciones no leídas.</p>
+
+    <div class="screenshot">
+      <img src="manual-screenshots/13-notificaciones.png" alt="Captura: Notificaciones" />
+      <div class="screenshot-label">Captura: Notificaciones</div>
+      <div class="screenshot-desc">Panel de notificaciones</div>
+    </div>
+
+    <h2>Tipos de Notificaciones</h2>
+    <ul>
+      <li><strong>Stock bajo:</strong> Cuando un producto alcanza su nivel mínimo</li>
+      <li><strong>Nueva venta:</strong> Confirmación de venta realizada</li>
+      <li><strong>Alertas del sistema:</strong> Información importante</li>
+    </ul>
+
+    <h2>Gestionar Notificaciones</h2>
+    <ul>
+      <li>Las notificaciones no leídas aparecen con un punto rojo</li>
+      <li>Marque como leída al hacer clic</li>
+      <li>Las notificaciones se mantienen en el historial</li>
+    </ul>
+
+    <div class="info-box">
+      <div class="info-box-title">Acceso</div>
+      <p><span class="role-tag admin">ADMIN</span> <span class="role-tag inventario">INVENTARIO</span> reciben notificaciones de stock bajo.</p>
+    </div>
+  </div>
+
+  <!-- 15. Gestión de Usuarios -->
+  <div class="section page-break" id="usuarios">
+    <h1>15. Gestión de Usuarios</h1>
+
+    <p>Administración de cuentas de usuario del sistema.</p>
+
+    <h2>Acceso <span class="role-tag admin">ADMIN</span></h2>
+    <p>Solo los administradores pueden gestionar usuarios.</p>
+
+    <h2>Crear Usuario</h2>
+    <div class="steps">
+      <div class="step">
+        <div class="step-title">Acceda a Usuarios</div>
+        <p>Menú: Administración → Usuarios</p>
+      </div>
+      <div class="step">
+        <div class="step-title">Haga clic en "Agregar Usuario"</div>
+        <p>Formulario de registro</p>
+      </div>
+      <div class="step">
+        <div class="step-title">Complete los datos</div>
+        <p>Usuario, nombre, email, rol</p>
+      </div>
+      <div class="step">
+        <div class="step-title">Guarde el usuario</div>
+        <p>Se enviarán credenciales temporales si está configurado</p>
+      </div>
+    </div>
+
+    <div class="screenshot">
+      <img src="manual-screenshots/14-usuarios.png" alt="Captura: Gestión de Usuarios" />
+      <div class="screenshot-label">Captura: Gestión de Usuarios</div>
+      <div class="screenshot-desc">Lista de usuarios con acciones</div>
+    </div>
+
+    <h2>Resetear Contraseña</h2>
+    <p>Si un usuario olvida su contraseña:</p>
+    <ol>
+      <li>Busque el usuario en la lista</li>
+      <li>Haga clic en el botón de resetear contraseña (llave)</li>
+      <li>Ingrese la nueva contraseña (mínimo 6 caracteres)</li>
+      <li>Confirme la acción</li>
+    </ol>
+
+    <h2>Activar/Desactivar Usuario</h2>
+    <p>Los usuarios desactivados no pueden iniciar sesión pero sus datos se mantienen.</p>
+    <ol>
+      <li>Busque el usuario en la lista</li>
+      <li>Haga clic en el botón de toggle (flecha circular)</li>
+      <li>Confirme la acción</li>
+    </ol>
+  </div>
+
+  <!-- 16. Gestión de Roles -->
+  <div class="section page-break" id="roles">
+    <h1>16. Gestión de Roles</h1>
+
+    <p>Definición de permisos para cada rol de usuario.</p>
+
+    <h2>Acceso <span class="role-tag admin">ADMIN</span></h2>
+    <p>Solo los administradores pueden gestionar roles.</p>
+
+    <h2>Crear/Editar Rol</h2>
+    <div class="steps">
+      <div class="step">
+        <div class="step-title">Acceda a Roles</div>
+        <p>Menú: Administración → Roles</p>
+      </div>
+      <div class="step">
+        <div class="step-title">Crear Rol</div>
+        <p>Haga clic en "Agregar Rol"</p>
+      </div>
+      <div class="step">
+        <div class="step-title">Defina Nombre y Descripción</div>
+        <p>Indique el nombre del rol y una descripción</p>
+      </div>
+      <div class="step">
+        <div class="step-title">Asigne Permisos</div>
+        <p>Seleccione qué acciones puede realizar cada rol en cada sección</p>
+      </div>
+      <div class="step">
+        <div class="step-title">Guarde el rol</div>
+        <p>El rol estará disponible para asignar a usuarios</p>
+      </div>
+    </div>
+
+    <div class="screenshot">
+      <img src="manual-screenshots/15-roles.png" alt="Captura: Gestión de Roles" />
+      <div class="screenshot-label">Captura: Gestión de Roles</div>
+      <div class="screenshot-desc">Editor de permisos por rol</div>
+    </div>
+
+    <h2>Permisos Disponibles</h2>
+    <table>
+      <thead>
+        <tr>
+          <th>Acción</th>
+          <th>Descripción</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td>Lectura</td>
+          <td>Ver datos (lectura sola)</td>
+        </tr>
+        <tr>
+          <td>Crear</td>
+          <td>Agregar nuevos registros</td>
+        </tr>
+        <tr>
+          <td>Actualizar</td>
+          <td>Modificar registros existentes</td>
+        </tr>
+        <tr>
+          <td>Eliminar</td>
+          <td>Eliminar registros</td>
+        </tr>
+      </tbody>
+    </table>
+
+    <h2>Recursos Disponibles</h2>
+    <p>Cada rol puede tener permisos diferentes para cada recurso:</p>
+    <ul>
+      <li>Productos, Categorías, Proveedores</li>
+      <li>Inventario, Almacenes</li>
+      <li>Ventas, Compras</li>
+      <li>Clientes</li>
+      <li>Reportes</li>
+      <li>Usuarios, Roles</li>
+    </ul>
+  </div>
+
+  <!-- 17. Mi Perfil -->
+  <div class="section page-break" id="perfil">
+    <h1>17. Mi Perfil</h1>
+
+    <p>Gestión de su propia cuenta de usuario.</p>
+
+    <h2>Acceso</h2>
+    <p>Todos los usuarios pueden gestionar su propio perfil desde el dropdown de usuario (esquina superior derecha).</p>
+
+    <h2>Cambiar Mi Contraseña</h2>
+    <div class="steps">
+      <div class="step">
+        <div class="step-title">Acceda a su Perfil</div>
+        <p>Dropdown de usuario → Mi Perfil</p>
+      </div>
+      <div class="step">
+        <div class="step-title">Seleccione Cambiar Contraseña</div>
+        <p>Opción disponible en su perfil</p>
+      </div>
+      <div class="step">
+        <div class="step-title">Ingrese Contraseña Actual</div>
+        <p>Para verificar su identidad</p>
+      </div>
+      <div class="step">
+        <div class="step-title">Ingrese Nueva Contraseña</div>
+        <p>Mínimo 6 caracteres</p>
+      </div>
+      <div class="step">
+        <div class="step-title">Confirme y Guarde</div>
+        <p>Su contraseña será actualizada</p>
+      </div>
+    </div>
+
+    <div class="info-box warning">
+      <div class="info-box-title">⚠️ Contraseña</div>
+      <p>Elija una contraseña segura que no use en otros sistemas. Si olvida su contraseña, contacte al administrador.</p>
+    </div>
+
+    <h2>Ver Mi Información</h2>
+    <p>En su perfil puede ver:</p>
+    <ul>
+      <li>Nombre completo</li>
+      <li>Email</li>
+      <li>Rol asignado</li>
+      <li>Fecha de último ingreso</li>
+    </ul>
+  </div>
+
+  <!-- Footer -->
+  <div class="footer">
+    <p><strong>Paraiso Biker - Sistema de Gestión</strong></p>
+    <p>Manual de Usuario v1.0 - Julio 2026</p>
+    <p>&copy; Paraiso Biker. Todos los derechos reservados.</p>
+  </div>
+
+  <!-- Print Button -->
+  <button class="print-btn" onclick="window.print()">Imprimir PDF</button>
+
+</body>
+</html>

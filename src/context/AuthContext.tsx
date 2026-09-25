@@ -1,8 +1,9 @@
-import { createContext, useContext, useState, useEffect } from "react";
+import { createContext, useContext, useState, useEffect, useCallback } from "react";
 import type { ReactNode } from "react";
 import { authService } from "../services/auth.service";
 import { getErrorMessage } from "../utils/error";
 import type { User, LoginRequest } from "../types";
+import { useToast } from "./ToastContext";
 
 /**
  * AUTH STATE SHAPE
@@ -20,6 +21,7 @@ interface AuthState {
   login: (credentials: LoginRequest) => Promise<void>;
   logout: () => Promise<void>;
   clearError: () => void;
+  refreshUser: () => Promise<void>;
 }
 
 /**
@@ -55,6 +57,24 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const [token, setToken] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const { showToast } = useToast();
+
+  /**
+   * REFRESH USER FUNCTION
+   *
+   * Fetches fresh user data from backend to ensure role.permissions is populated.
+   * Called after login and on app initialization.
+   */
+  const refreshUser = useCallback(async (): Promise<void> => {
+    try {
+      const freshUser = await authService.getCurrentUser();
+      setUser(freshUser);
+      localStorage.setItem("user", JSON.stringify(freshUser));
+    } catch (err) {
+      const message = getErrorMessage(err, "Error al cargar permisos de usuario.");
+      showToast({ type: "error", message });
+    }
+  }, [showToast]);
 
   /**
    * INITIALIZATION EFFECT
@@ -74,19 +94,20 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
 
     if (savedToken && savedUser) {
       try {
-        // Parse saved user JSON string back to object
         const parsedUser = JSON.parse(savedUser);
         setToken(savedToken);
         setUser(parsedUser);
+        refreshUser().finally(() => setLoading(false));
       } catch (err) {
-        // If parsing fails, clear corrupted data
         console.error("Failed to parse saved user:", err);
         localStorage.removeItem("token");
         localStorage.removeItem("user");
+        setLoading(false);
       }
+    } else {
+      setLoading(false);
     }
-    setLoading(false);
-  }, []); // Empty dependency array = run once on mount
+  }, [refreshUser]); // Refresh user ref is stable via useCallback
 
   /**
    * LOGIN FUNCTION
@@ -122,6 +143,9 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       // Store user in state and localStorage
       setUser(response.user);
       localStorage.setItem("user", JSON.stringify(response.user));
+
+      // Refresh to ensure full role permissions are loaded
+      await refreshUser();
     } catch (err: any) {
       // Extract error message from axios error response
       const errorMessage = getErrorMessage(err, "Error al iniciar sesión");
@@ -197,6 +221,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     login,
     logout,
     clearError,
+    refreshUser,
   };
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;

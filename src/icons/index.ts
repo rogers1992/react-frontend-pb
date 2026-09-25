@@ -60,6 +60,9 @@ import { ReactComponent as SalesIcon } from "./sales.svg?react";
 import { ReactComponent as CustomerIcon } from "./customer.svg?react";
 import { ReactComponent as ReportsIcon } from "./reports.svg?react";
 import { ReactComponent as ConfigurationIcon } from "./configuration.svg?react";
+import { ReactComponent as CashRegisterIcon } from "./cash-register.svg?react";
+import { ReactComponent as ExpensesIcon } from "./expenses.svg?react";
+import { ReactComponent as BellIcon } from "./bell.svg?react";
 
 export {
   ErrorHexaIcon,
@@ -124,4 +127,7 @@ export {
   CustomerIcon,
   ReportsIcon,
   ConfigurationIcon,
+  CashRegisterIcon,
+  ExpensesIcon,
+  BellIcon,
 };

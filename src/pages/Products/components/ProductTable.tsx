@@ -8,7 +8,7 @@ function ProductThumbnail({ product }: { product: Product }) {
   const url = resolveImageUrl(product.image_url);
   if (url) {
     return (
-      <div className="h-10 w-10 shrink-0 overflow-hidden rounded-full bg-gray-100 dark:bg-gray-800">
+      <div className="w-20 h-20 overflow-hidden border border-gray-200 rounded-lg dark:border-gray-800">
         <img
           src={url}
           alt={product.name}
@@ -58,7 +58,9 @@ export function getProductColumns(
       key: "sku",
       header: "SKU",
       sortable: true,
-      render: (item: Product) => item.sku || "—",
+      render: (item: Product) => (
+        <span className="font-mono text-xs">{item.sku}</span>
+      ),
     },
     {
       key: "barcode",
@@ -75,8 +77,39 @@ export function getProductColumns(
       header: "Precio Unitario",
       sortable: true,
       render: (item: Product) => {
+        const price =
+          typeof item.unit_price === "string"
+            ? parseFloat(item.unit_price)
+            : item.unit_price;
+        return `Bs${price.toFixed(2)}`;
+      },
+    },
+    {
+      key: "current_cost",
+      header: "Costo Actual",
+      sortable: true,
+      render: (item: Product) => {
+        if (item.current_cost === null || item.current_cost === undefined) return "—";
+        const cost = typeof item.current_cost === "string" ? parseFloat(item.current_cost) : item.current_cost;
+        return `Bs${cost.toFixed(2)}`;
+      },
+    },
+    {
+      key: "margin",
+      header: "Margen %",
+      sortable: true,
+      render: (item: Product) => {
+        if (item.current_cost === null || item.current_cost === undefined || item.current_cost === 0) return "—";
+        const cost = typeof item.current_cost === "string" ? parseFloat(item.current_cost) : item.current_cost;
         const price = typeof item.unit_price === "string" ? parseFloat(item.unit_price) : item.unit_price;
-        return `$${price.toFixed(2)}`;
+        const margin = ((price - cost) / price) * 100;
+        const cls =
+          margin < 0
+            ? "text-error-600 dark:text-error-500"
+            : margin >= 30
+              ? "text-success-600 dark:text-success-500"
+              : "text-gray-600 dark:text-gray-400";
+        return <span className={cls}>{margin.toFixed(1)}%</span>;
       },
     },
     {
@@ -93,7 +126,12 @@ export function getProductColumns(
       header: "",
       className: "w-24",
       render: (item: Product) => (
-        <ProductActions product={item} onEdit={onEdit} onDelete={onDelete} />
+        <ProductActions
+          product={item}
+          onEdit={onEdit}
+          onDelete={onDelete}
+          hideDelete={!item.is_active}
+        />
       ),
     },
   ];

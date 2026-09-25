@@ -1,34 +1,61 @@
+import { lazy, Suspense } from "react";
 import { BrowserRouter as Router, Routes, Route } from "react-router";
+import AppLayout from "./layout/AppLayout";
+import { ScrollToTop } from "./components/common/ScrollToTop";
+import ProtectedRoute from "./components/auth/ProtectedRoute";
+import LandingRedirect from "./components/auth/LandingRedirect";
+import PermissionRoute from "./components/auth/PermissionRoute";
+
+// Auth pages (small, eagerly loaded)
 import SignIn from "./pages/AuthPages/SignIn";
 import SignUp from "./pages/AuthPages/SignUp";
 import NotFound from "./pages/OtherPage/NotFound";
-import UserProfiles from "./pages/UserProfiles";
-import Videos from "./pages/UiElements/Videos";
-import Images from "./pages/UiElements/Images";
-import Alerts from "./pages/UiElements/Alerts";
-import Badges from "./pages/UiElements/Badges";
-import Avatars from "./pages/UiElements/Avatars";
-import Buttons from "./pages/UiElements/Buttons";
-import LineChart from "./pages/Charts/LineChart";
-import BarChart from "./pages/Charts/BarChart";
-import Calendar from "./pages/Calendar";
-import BasicTables from "./pages/Tables/BasicTables";
-import FormElements from "./pages/Forms/FormElements";
-import Blank from "./pages/Blank";
-import AppLayout from "./layout/AppLayout";
-import { ScrollToTop } from "./components/common/ScrollToTop";
-import Home from "./pages/Dashboard/Home";
-import ProtectedRoute from "./components/auth/ProtectedRoute";
-import ProductIndex from "./pages/Products/ProductIndex";
-import CategoryIndex from "./pages/Categories/CategoryIndex";
-import SupplierIndex from "./pages/Suppliers/SupplierIndex";
-import InventoryIndex from "./pages/Inventory/InventoryIndex";
-import WarehouseIndex from "./pages/Warehouses/WarehouseIndex";
-import UserIndex from "./pages/Users/UserIndex";
-import RoleIndex from "./pages/Roles/RoleIndex";
-import NotificationIndex from "./pages/Notifications/NotificationIndex";
 import Unauthorized from "./pages/OtherPage/Unauthorized";
-import PermissionRoute from "./components/auth/PermissionRoute";
+
+// Lazy-loaded page components
+const DashboardPage = lazy(() => import("./pages/Dashboard/DashboardPage"));
+const ProductIndex = lazy(() => import("./pages/Products/ProductIndex"));
+const CategoryIndex = lazy(() => import("./pages/Categories/CategoryIndex"));
+const SupplierIndex = lazy(() => import("./pages/Suppliers/SupplierIndex"));
+const InventoryIndex = lazy(() => import("./pages/Inventory/InventoryIndex"));
+const WarehouseIndex = lazy(() => import("./pages/Warehouses/WarehouseIndex"));
+const SalesHistory = lazy(() => import("./pages/Sales/SalesHistory"));
+const SalesPOS = lazy(() => import("./pages/Sales/SalesPOS"));
+const PurchaseHistory = lazy(() => import("./pages/Purchases/PurchaseHistory"));
+const PurchasePOS = lazy(() => import("./pages/Purchases/PurchasePOS"));
+const UserIndex = lazy(() => import("./pages/Users/UserIndex"));
+const RoleIndex = lazy(() => import("./pages/Roles/RoleIndex"));
+const CustomerIndex = lazy(() => import("./pages/Customers/CustomerIndex"));
+const NotificationIndex = lazy(() => import("./pages/Notifications/NotificationIndex"));
+const ReportsIndex = lazy(() => import("./pages/Reports/ReportsIndex"));
+const CajaIndex = lazy(() => import("./pages/Caja/CajaIndex"));
+const CajaMovements = lazy(() => import("./pages/Caja/CajaMovements"));
+const CajaHistory = lazy(() => import("./pages/Caja/CajaHistory"));
+const ExpenseIndex = lazy(() => import("./pages/Expenses/ExpenseIndex"));
+const IncomeStatement = lazy(() => import("./pages/Expenses/IncomeStatement"));
+
+// UI demo pages (lazy)
+const UserProfiles = lazy(() => import("./pages/UserProfiles"));
+const Videos = lazy(() => import("./pages/UiElements/Videos"));
+const Images = lazy(() => import("./pages/UiElements/Images"));
+const Alerts = lazy(() => import("./pages/UiElements/Alerts"));
+const Badges = lazy(() => import("./pages/UiElements/Badges"));
+const Avatars = lazy(() => import("./pages/UiElements/Avatars"));
+const Buttons = lazy(() => import("./pages/UiElements/Buttons"));
+const LineChart = lazy(() => import("./pages/Charts/LineChart"));
+const BarChart = lazy(() => import("./pages/Charts/BarChart"));
+const Calendar = lazy(() => import("./pages/Calendar"));
+const BasicTables = lazy(() => import("./pages/Tables/BasicTables"));
+const FormElements = lazy(() => import("./pages/Forms/FormElements"));
+const Blank = lazy(() => import("./pages/Blank"));
+
+function PageLoader() {
+  return (
+    <div className="flex items-center justify-center min-h-[50vh]">
+      <div className="animate-spin h-8 w-8 border-4 border-brand-500 border-t-transparent rounded-full" />
+    </div>
+  );
+}
 
 export default function App() {
   return (
@@ -44,19 +71,43 @@ export default function App() {
               </ProtectedRoute>
             }
           >
-            <Route index path="/" element={<Home />} />
-            <Route path="/products" element={<ProductIndex />} />
-            <Route path="/categories" element={<CategoryIndex />} />
-            <Route path="/suppliers" element={<SupplierIndex />} />
-            <Route path="/inventory" element={<InventoryIndex />} />
-            <Route path="/warehouses" element={<WarehouseIndex />} />
+            <Route path="/" element={<LandingRedirect />} />
+            <Route path="/products" element={<Suspense fallback={<PageLoader />}><ProductIndex /></Suspense>} />
+            <Route path="/categories" element={<Suspense fallback={<PageLoader />}><CategoryIndex /></Suspense>} />
+            <Route path="/suppliers" element={<Suspense fallback={<PageLoader />}><SupplierIndex /></Suspense>} />
+            <Route path="/inventory" element={<Suspense fallback={<PageLoader />}><InventoryIndex /></Suspense>} />
+            <Route path="/warehouses" element={
+              <PermissionRoute resource="inventory" action="read">
+                <Suspense fallback={<PageLoader />}><WarehouseIndex /></Suspense>
+              </PermissionRoute>
+            } />
+            <Route path="/sales" element={
+              <PermissionRoute resource="sales" action="read">
+                <Suspense fallback={<PageLoader />}><SalesHistory /></Suspense>
+              </PermissionRoute>
+            } />
+            <Route path="/sales/new" element={
+              <PermissionRoute resource="sales" action="create">
+                <Suspense fallback={<PageLoader />}><SalesPOS /></Suspense>
+              </PermissionRoute>
+            } />
+            <Route path="/purchases" element={
+              <PermissionRoute resource="purchases" action="read">
+                <Suspense fallback={<PageLoader />}><PurchaseHistory /></Suspense>
+              </PermissionRoute>
+            } />
+            <Route path="/purchases/new" element={
+              <PermissionRoute resource="purchases" action="create">
+                <Suspense fallback={<PageLoader />}><PurchasePOS /></Suspense>
+              </PermissionRoute>
+            } />
 
             {/* Administration - permission gated */}
             <Route
               path="/users"
               element={
                 <PermissionRoute resource="users" action="read">
-                  <UserIndex />
+                  <Suspense fallback={<PageLoader />}><UserIndex /></Suspense>
                 </PermissionRoute>
               }
             />
@@ -64,35 +115,106 @@ export default function App() {
               path="/roles"
               element={
                 <PermissionRoute resource="roles" action="read">
-                  <RoleIndex />
+                  <Suspense fallback={<PageLoader />}><RoleIndex /></Suspense>
                 </PermissionRoute>
               }
             />
+            <Route
+              path="/customers"
+              element={
+                <PermissionRoute resource="customers" action="read">
+                  <Suspense fallback={<PageLoader />}><CustomerIndex /></Suspense>
+                </PermissionRoute>
+              }
+            />
+
+            {/* Analytics & reports - permission gated to reports.read */}
+            <Route
+              path="/dashboard"
+              element={
+                <PermissionRoute resource="reports" action="read">
+                  <Suspense fallback={<PageLoader />}><DashboardPage /></Suspense>
+                </PermissionRoute>
+              }
+            />
+            <Route
+              path="/reports"
+              element={
+                <PermissionRoute resource="reports" action="read">
+                  <Suspense fallback={<PageLoader />}><ReportsIndex /></Suspense>
+                </PermissionRoute>
+              }
+            />
+
+            {/* Cash Register - permission gated */}
+            <Route
+              path="/caja"
+              element={
+                <PermissionRoute resource="cash_register" action="read">
+                  <Suspense fallback={<PageLoader />}><CajaIndex /></Suspense>
+                </PermissionRoute>
+              }
+            />
+            <Route
+              path="/caja/movements"
+              element={
+                <PermissionRoute resource="cash_register" action="read">
+                  <Suspense fallback={<PageLoader />}><CajaMovements /></Suspense>
+                </PermissionRoute>
+              }
+            />
+            <Route
+              path="/caja/history"
+              element={
+                <PermissionRoute resource="cash_register" action="read">
+                  <Suspense fallback={<PageLoader />}><CajaHistory /></Suspense>
+                </PermissionRoute>
+              }
+            />
+
+            {/* Expenses */}
+            <Route
+              path="/expenses"
+              element={
+                <PermissionRoute resource="expenses" action="read">
+                  <Suspense fallback={<PageLoader />}><ExpenseIndex /></Suspense>
+                </PermissionRoute>
+              }
+            />
+            <Route
+              path="/income-statement"
+              element={
+                <PermissionRoute resource="expenses" action="read">
+                  <Suspense fallback={<PageLoader />}><IncomeStatement /></Suspense>
+                </PermissionRoute>
+              }
+            />
+
             <Route path="/no-autizado" element={<Unauthorized />} />
-            <Route path="/notifications" element={<NotificationIndex />} />
+            <Route path="/notifications" element={<Suspense fallback={<PageLoader />}><NotificationIndex /></Suspense>} />
 
             {/* Others Page */}
-            <Route path="/profile" element={<UserProfiles />} />
-            <Route path="/calendar" element={<Calendar />} />
-            <Route path="/blank" element={<Blank />} />
+            <Route path="/profile" element={<Suspense fallback={<PageLoader />}><UserProfiles /></Suspense>} />
+            <Route path="/calendar" element={<Suspense fallback={<PageLoader />}><Calendar /></Suspense>} />
+            <Route path="/blank" element={<Suspense fallback={<PageLoader />}><Blank /></Suspense>} />
 
             {/* Forms */}
-            <Route path="/form-elements" element={<FormElements />} />
+            <Route path="/form-elements" element={<Suspense fallback={<PageLoader />}><FormElements /></Suspense>} />
 
             {/* Tables */}
-            <Route path="/basic-tables" element={<BasicTables />} />
+            <Route path="/basic-tables" element={<Suspense fallback={<PageLoader />}><BasicTables /></Suspense>} />
 
             {/* Ui Elements */}
-            <Route path="/alerts" element={<Alerts />} />
-            <Route path="/avatars" element={<Avatars />} />
-            <Route path="/badge" element={<Badges />} />
-            <Route path="/buttons" element={<Buttons />} />
-            <Route path="/images" element={<Images />} />
-            <Route path="/videos" element={<Videos />} />
+            <Route path="/alerts" element={<Suspense fallback={<PageLoader />}><Alerts /></Suspense>} />
+            <Route path="/avatars" element={<Suspense fallback={<PageLoader />}><Avatars /></Suspense>} />
+            <Route path="/badge" element={<Suspense fallback={<PageLoader />}><Badges /></Suspense>} />
+            <Route path="/buttons" element={<Suspense fallback={<PageLoader />}><Buttons /></Suspense>} />
+            <Route path="/images" element={<Suspense fallback={<PageLoader />}><Images /></Suspense>} />
+            <Route path="/videos" element={<Suspense fallback={<PageLoader />}><Videos /></Suspense>} />
 
             {/* Charts */}
-            <Route path="/line-chart" element={<LineChart />} />
-            <Route path="/bar-chart" element={<BarChart />} />
+            <Route path="/line-chart" element={<Suspense fallback={<PageLoader />}><LineChart /></Suspense>} />
+            <Route path="/bar-chart" element={<Suspense fallback={<PageLoader />}><BarChart /></Suspense>} />
           </Route>
 
           {/* Auth Layout */}

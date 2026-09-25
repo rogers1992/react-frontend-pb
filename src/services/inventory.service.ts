@@ -15,9 +15,10 @@ export const inventoryService = {
   /**
    * Get all inventory items (with optional pagination)
    */
-  getAll: async (skip = 0, limit = 100): Promise<InventoryItem[]> => {
+  getAll: async (skip = 0, limit = 100, signal?: AbortSignal): Promise<InventoryItem[]> => {
     const response = await api.get<InventoryItem[]>('/inventory', {
-      params: { skip, limit }
+      params: { skip, limit },
+      signal,
     });
     return response.data;
   },
@@ -25,8 +26,8 @@ export const inventoryService = {
   /**
    * Get inventory items by warehouse
    */
-  getByWarehouse: async (warehouseId: number): Promise<InventoryItem[]> => {
-    const response = await api.get<InventoryItem[]>(`/inventory/warehouse/${warehouseId}`);
+  getByWarehouse: async (warehouseId: number, signal?: AbortSignal): Promise<InventoryItem[]> => {
+    const response = await api.get<InventoryItem[]>(`/inventory/warehouse/${warehouseId}`, { signal });
     return response.data;
   },
 

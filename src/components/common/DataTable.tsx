@@ -1,4 +1,4 @@
-import { useState, useMemo, type ReactNode } from "react";
+import { useState, useEffect, useMemo, type ReactNode } from "react";
 import {
   Table,
   TableBody,
@@ -26,6 +26,8 @@ interface DataTableProps<T> {
   onSearchChange?: (value: string) => void;
   actions?: ReactNode;
   onRowClick?: (item: T) => void;
+  footer?: ReactNode;
+  renderFooter?: (filteredData: T[]) => ReactNode;
 
   serverSide?: boolean;
   totalItems?: number;
@@ -59,6 +61,8 @@ export default function DataTable<T>({
   onSearchChange,
   actions,
   onRowClick,
+  footer,
+  renderFooter,
   serverSide = false,
   totalItems,
   currentPage: controlledPage = 0,
@@ -88,6 +92,10 @@ export default function DataTable<T>({
     if (!serverSide) setLocalPage(0);
   };
 
+  useEffect(() => {
+    if (!serverSide) setLocalPage(0);
+  }, [searchValue, serverSide]);
+
   const sortedData = useMemo(() => {
     if (serverSide) return data;
     if (!sortKey || !sortDir) return data;
@@ -116,12 +124,24 @@ export default function DataTable<T>({
     });
   }, [data, sortKey, sortDir, serverSide]);
 
-  const displayTotal = serverSide ? (totalItems ?? 0) : sortedData.length;
+  const filteredData = useMemo(() => {
+    if (serverSide) return sortedData;
+    if (!searchValue) return sortedData;
+    const q = searchValue.toLowerCase();
+    return sortedData.filter((item) =>
+      columns.some((col) => {
+        const val = (item as unknown as Record<string, unknown>)[col.key];
+        return val != null && String(val).toLowerCase().includes(q);
+      }),
+    );
+  }, [sortedData, searchValue, columns, serverSide]);
+
+  const displayTotal = serverSide ? (totalItems ?? 0) : filteredData.length;
   const totalPages = Math.max(1, Math.ceil(displayTotal / effectivePageSize));
   const currentPageIndex = Math.min(effectivePage, totalPages - 1);
   const paginatedData = serverSide
-    ? sortedData
-    : sortedData.slice(
+    ? filteredData
+    : filteredData.slice(
         currentPageIndex * effectivePageSize,
         currentPageIndex * effectivePageSize + effectivePageSize,
       );
@@ -255,6 +275,12 @@ export default function DataTable<T>({
                 ))
               )}
             </TableBody>
+
+            {(footer || renderFooter) && (
+              <tfoot className="border-t-2 border-gray-300 bg-gray-50 dark:border-gray-600 dark:bg-gray-800/50">
+                {renderFooter ? renderFooter(filteredData) : footer}
+              </tfoot>
+            )}
           </Table>
         </div>
       </div>
