@@ -8,6 +8,7 @@ import Select from "../../../components/form/Select";
 import Checkbox from "../../../components/form/input/Checkbox";
 import { generateSku } from "../../../utils/sku";
 import { productService } from "../../../services/product.service";
+import { usePermissions } from "../../../hooks/usePermissions";
 import type { Product, ProductCreate, ProductUpdate, Category, Supplier } from "../../../types";
 
 const MAX_IMAGES = 10;
@@ -49,12 +50,18 @@ export default function ProductForm({
   loading = false,
 }: ProductFormProps) {
   const isEditing = !!product;
+  const { can } = usePermissions();
+  const canSeeWholesale = can("wholesale", "read");
+  const canSeeCost = can("purchases", "read");
+  const canEditCost = can("purchases", "create") || can("purchases", "update");
 
   const [name, setName] = useState("");
   const [sku, setSku] = useState("");
   const [barcode, setBarcode] = useState("");
   const [description, setDescription] = useState("");
   const [unitPrice, setUnitPrice] = useState("");
+  const [wholesalePrice, setWholesalePrice] = useState("");
+  const [costPrice, setCostPrice] = useState("");
   const [weight, setWeight] = useState("");
   const [categoryId, setCategoryId] = useState("");
   const [supplierId, setSupplierId] = useState("");
@@ -72,6 +79,8 @@ export default function ProductForm({
       setBarcode(product.barcode ?? "");
       setDescription(product.description ?? "");
       setUnitPrice(String(product.unit_price));
+      setWholesalePrice(product.wholesale_price != null ? String(product.wholesale_price) : "");
+      setCostPrice(product.effective_cost != null ? String(product.effective_cost) : "");
       setWeight(product.weight ? String(product.weight) : "");
       setCategoryId(String(product.category_id));
       setSupplierId(product.supplier_id ? String(product.supplier_id) : "");
@@ -83,6 +92,8 @@ export default function ProductForm({
       setBarcode("");
       setDescription("");
       setUnitPrice("");
+      setWholesalePrice("");
+      setCostPrice("");
       setWeight("");
       setCategoryId("");
       setSupplierId("");
@@ -219,6 +230,8 @@ export default function ProductForm({
       barcode: barcode || undefined,
       description: description || undefined,
       unit_price: parseFloat(unitPrice),
+      wholesale_price: wholesalePrice ? parseFloat(wholesalePrice) : null,
+      cost_price: canEditCost && costPrice ? parseFloat(costPrice) : undefined,
       weight: weight ? parseFloat(weight) : undefined,
       category_id: parseInt(categoryId),
       supplier_id: supplierId ? parseInt(supplierId) : null,
@@ -470,6 +483,39 @@ export default function ProductForm({
               />
             </div>
           </div>
+
+          {(canSeeWholesale || canSeeCost) && (
+            <div className="grid grid-cols-1 gap-5 sm:grid-cols-2">
+              {canSeeWholesale && (
+                <div>
+                  <Label>Precio por Mayor</Label>
+                  <Input
+                    type="number"
+                    placeholder="0.00"
+                    value={wholesalePrice}
+                    onChange={(e) => setWholesalePrice(e.target.value)}
+                    step={0.01}
+                    min="0"
+                    disabled={loading}
+                  />
+                </div>
+              )}
+              {canSeeCost && (
+                <div>
+                  <Label>Costo</Label>
+                  <Input
+                    type="number"
+                    placeholder="0.00"
+                    value={costPrice}
+                    onChange={(e) => setCostPrice(e.target.value)}
+                    step={0.01}
+                    min="0"
+                    disabled={loading || !canEditCost}
+                  />
+                </div>
+              )}
+            </div>
+          )}
 
           <div>
             <Label>Descripcion</Label>

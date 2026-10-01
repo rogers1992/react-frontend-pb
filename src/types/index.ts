@@ -25,6 +25,7 @@ export const VALID_RESOURCES = [
   "suppliers",
   "cash_register",
   "expenses",
+  "wholesale",
 ] as const;
 
 export const VALID_ACTIONS = ["read", "create", "update", "delete"] as const;
@@ -42,6 +43,7 @@ export const RESOURCE_LABELS: Record<string, string> = {
   suppliers: "Proveedores",
   cash_register: "Caja",
   expenses: "Gastos",
+  wholesale: "Ventas por Mayor",
 };
 
 export const ACTION_LABELS: Record<string, string> = {
@@ -194,6 +196,9 @@ export interface Product {
   barcode?: string;
   description?: string;
   unit_price: number;
+  wholesale_price: number | null;
+  cost_price: number | null;
+  effective_cost: number | null;
   weight?: number;
   image_url?: string;
   category_id: number;
@@ -215,6 +220,8 @@ export interface ProductCreate {
   barcode?: string;
   description?: string;
   unit_price: number;
+  wholesale_price?: number | null;
+  cost_price?: number | null;
   weight?: number;
   category_id: number;
   supplier_id?: number | null;
@@ -231,6 +238,8 @@ export interface ProductUpdate {
   barcode?: string;
   description?: string;
   unit_price: number;
+  wholesale_price?: number | null;
+  cost_price?: number | null;
   weight?: number;
   image_url?: string | null;
   category_id?: number;

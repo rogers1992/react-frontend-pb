@@ -6,6 +6,7 @@ interface CartItem {
   product: Product;
   quantity: number;
   discount: number;
+  isWholesale: boolean;
 }
 
 interface CartItemRowProps {
@@ -13,6 +14,7 @@ interface CartItemRowProps {
   stockQuantity: number;
   onUpdate: (quantity: number, discount: number) => void;
   onRemove: () => void;
+  getActivePrice: (product: Product, isWholesale: boolean) => number;
 }
 
 export default function CartItemRow({
@@ -20,12 +22,10 @@ export default function CartItemRow({
   stockQuantity,
   onUpdate,
   onRemove,
+  getActivePrice,
 }: CartItemRowProps) {
   const url = resolveImageUrl(item.product.image_url);
-  const price =
-    typeof item.product.unit_price === "string"
-      ? parseFloat(item.product.unit_price)
-      : item.product.unit_price;
+  const price = getActivePrice(item.product, item.isWholesale);
   const lineTotal = price * item.quantity - (item.discount || 0);
 
   const handleQuantityChange = (delta: number) => {
@@ -60,7 +60,7 @@ export default function CartItemRow({
             {item.product.name}
           </p>
           <p className="text-xs text-gray-500 dark:text-gray-400">
-            Bs{price.toFixed(2)} c/u
+            Bs{price.toFixed(2)} c/u{item.isWholesale && " (por mayor)"}
           </p>
         </div>
         <p className="text-sm font-semibold text-gray-800 dark:text-white/90 shrink-0">
