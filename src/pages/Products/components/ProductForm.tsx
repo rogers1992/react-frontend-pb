@@ -5,10 +5,10 @@ import Input from "../../../components/form/input/InputField";
 import TextArea from "../../../components/form/input/TextArea";
 import Label from "../../../components/form/Label";
 import Select from "../../../components/form/Select";
-import Checkbox from "../../../components/form/input/Checkbox";
 import { generateSku } from "../../../utils/sku";
 import { productService } from "../../../services/product.service";
 import { usePermissions } from "../../../hooks/usePermissions";
+import { CameraIcon, FolderIcon, ImageIcon } from "../../../icons";
 import type { Product, ProductCreate, ProductUpdate, Category, Supplier } from "../../../types";
 
 const MAX_IMAGES = 10;
@@ -38,6 +38,42 @@ interface ProductFormProps {
   categories: Category[];
   suppliers: Supplier[];
   loading?: boolean;
+}
+
+function CollapsibleSection({
+  title,
+  isOpen,
+  onToggle,
+  children,
+}: {
+  title: string;
+  isOpen: boolean;
+  onToggle: () => void;
+  children: React.ReactNode;
+}) {
+  return (
+    <div className="border border-gray-200 rounded-lg dark:border-gray-700">
+      <button
+        type="button"
+        onClick={onToggle}
+        className="w-full flex items-center justify-between p-3 text-left"
+      >
+        <span className="text-sm font-medium text-gray-800 dark:text-white/90">
+          {title}
+        </span>
+        <svg
+          className={`w-4 h-4 text-gray-400 transition-transform ${isOpen ? "rotate-180" : ""}`}
+          fill="none"
+          stroke="currentColor"
+          viewBox="0 0 24 24"
+          strokeWidth={2}
+        >
+          <path strokeLinecap="round" strokeLinejoin="round" d="m19 9-7 7-7-7" />
+        </svg>
+      </button>
+      {isOpen && <div className="px-3 pb-3">{children}</div>}
+    </div>
+  );
 }
 
 export default function ProductForm({
@@ -71,7 +107,14 @@ export default function ProductForm({
 
   const [images, setImages] = useState<ImageItem[]>([]);
   const [loadingImages, setLoadingImages] = useState(false);
-  const fileInputRef = useRef<HTMLInputElement>(null);
+  const cameraInputRef = useRef<HTMLInputElement>(null);
+  const fototecaInputRef = useRef<HTMLInputElement>(null);
+  const archivosInputRef = useRef<HTMLInputElement>(null);
+
+  // Collapsible sections
+  const [showWholesale, setShowWholesale] = useState(false);
+  const [showClassification, setShowClassification] = useState(false);
+  const [showDetails, setShowDetails] = useState(false);
 
   useEffect(() => {
     if (product) {
@@ -88,6 +131,10 @@ export default function ProductForm({
       setSupplierId(product.supplier_id ? String(product.supplier_id) : "");
       setIsActive(product.is_active);
       setSkuManuallyEdited(true);
+      // Auto-expand wholesale section if data exists
+      if (product.wholesale_price != null || product.wholesale_cost_price != null) {
+        setShowWholesale(true);
+      }
     } else {
       setName("");
       setSku("");
@@ -154,6 +201,20 @@ export default function ProductForm({
   const totalCount = images.length;
   const canAddMore = totalCount < MAX_IMAGES;
 
+  // Compute Ganancia per unit
+  const ganancia = (() => {
+    const price = parseFloat(unitPrice) || 0;
+    const cost = parseFloat(costPrice) || 0;
+    return price - cost;
+  })();
+
+  const gananciaPct = (() => {
+    const price = parseFloat(unitPrice) || 0;
+    const cost = parseFloat(costPrice) || 0;
+    if (price <= 0) return null;
+    return ((price - cost) / price * 100).toFixed(1);
+  })();
+
   const handleAddFiles = (e: React.ChangeEvent<HTMLInputElement>) => {
     const files = e.target.files;
     if (!files || files.length === 0) return;
@@ -172,7 +233,9 @@ export default function ProductForm({
 
     setImages((prev) => [...prev, ...newImages]);
 
-    if (fileInputRef.current) fileInputRef.current.value = "";
+    if (cameraInputRef.current) cameraInputRef.current.value = "";
+    if (fototecaInputRef.current) fototecaInputRef.current.value = "";
+    if (archivosInputRef.current) archivosInputRef.current.value = "";
   };
 
   const handleRemoveImage = (index: number) => {
@@ -283,229 +346,282 @@ export default function ProductForm({
   }));
 
   return (
-    <Modal isOpen={isOpen} onClose={handleClose} className="max-w-2xl p-6 sm:p-8">
-      <div className="mb-6">
-        <h3 className="text-lg font-semibold text-gray-800 dark:text-white/90">
-          {isEditing ? "Editar Producto" : "Nuevo Producto"}
-        </h3>
-        <p className="text-sm text-gray-500 dark:text-gray-400">
-          {isEditing
-            ? "Actualiza la informacion del producto."
-            : "Completa los campos para crear un nuevo producto."}
-        </p>
+    <Modal isOpen={isOpen} onClose={handleClose} className="max-w-4xl p-4 sm:p-6">
+      {/* Header */}
+      <div className="mb-6 flex items-start justify-between pr-14 sm:pr-20">
+        <div>
+          <h3 className="text-lg font-semibold text-gray-800 dark:text-white/90">
+            {isEditing ? "Editar Producto" : "Nuevo Producto"}
+          </h3>
+          <p className="text-sm text-gray-500 dark:text-gray-400">
+            {isEditing
+              ? `${name || "Producto"}${sku ? ` · ${sku}` : ""}`
+              : "Completa los campos para crear un nuevo producto."}
+          </p>
+        </div>
+        {isEditing && (
+          <div className="shrink-0 flex items-center gap-3">
+            <span className="text-sm text-gray-700 dark:text-gray-300 whitespace-nowrap">
+              {isActive ? "Activo" : "Inactivo"}
+            </span>
+            <label className="relative inline-flex items-center cursor-pointer">
+              <input
+                type="checkbox"
+                checked={isActive}
+                onChange={(e) => setIsActive(e.target.checked)}
+                className="sr-only peer"
+                disabled={loading}
+              />
+              <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-brand-500/20 rounded-full peer dark:bg-gray-700 peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all dark:border-gray-600 peer-checked:bg-brand-500"></div>
+            </label>
+          </div>
+        )}
       </div>
 
       <form onSubmit={handleSubmit}>
-        <div className="space-y-5">
-          {/* Image Grid Section */}
-          <div>
-            <Label>
-              Imágenes del producto ({totalCount}/{MAX_IMAGES})
-            </Label>
-            <div className="mt-2 flex flex-wrap gap-3">
-              {images.map((img, index) => (
-                <div key={`${img.id ?? "pending"}-${index}`} className="relative group">
-                  <div className="relative h-20 w-20 overflow-hidden rounded-lg border border-gray-200 bg-gray-50 dark:border-gray-700 dark:bg-gray-800">
-                    <img
-                      src={img.url}
-                      alt={`${name || "Producto"} - ${index + 1}`}
-                      className="h-full w-full object-cover"
-                    />
+        {/* Two-column layout: Photos (left) + Form (right) on desktop */}
+        <div className="grid grid-cols-1 md:grid-cols-[240px_1fr] gap-6">
+          {/* Left column: Photos + Ganancia */}
+          <div className="space-y-4">
+            {/* Photos section */}
+            <div>
+              <Label>Fotos ({totalCount}/{MAX_IMAGES})</Label>
+              <div className="flex overflow-x-auto snap-x snap-mandatory gap-2 mt-2 -mx-1 px-1">
+                {images.map((img, index) => (
+                  <div key={`${img.id ?? "pending"}-${index}`} className="flex-none w-[calc((100%-24px)/4)] min-w-[80px] snap-start aspect-square relative group">
+                    <div className="relative w-full h-full overflow-hidden rounded-lg border border-gray-200 bg-gray-50 dark:border-gray-700 dark:bg-gray-800">
+                      <img
+                        src={img.url}
+                        alt={`${name || "Producto"} - ${index + 1}`}
+                        className="h-full w-full object-cover"
+                      />
 
-                    {/* Primary star */}
-                    <button
-                      type="button"
-                      onClick={() => handleSetPrimary(index)}
-                      className="absolute top-0.5 left-0.5 p-0.5"
-                      title={img.isPrimary ? "Imagen principal" : "Marcar como principal"}
-                    >
-                      <svg
-                        className={`w-5 h-5 ${img.isPrimary ? "text-yellow-400" : "text-gray-400 opacity-0 group-hover:opacity-100"}`}
-                        fill={img.isPrimary ? "currentColor" : "none"}
-                        stroke="currentColor"
-                        viewBox="0 0 24 24"
-                        strokeWidth={1.5}
+                      {/* Primary badge */}
+                      {img.isPrimary ? (
+                        <span className="absolute top-1 left-1 text-[10px] font-medium bg-brand-500 text-white px-1.5 py-0.5 rounded">
+                          Principal
+                        </span>
+                      ) : (
+                        <button
+                          type="button"
+                          onClick={() => handleSetPrimary(index)}
+                          className="absolute top-1 left-1 p-0.5"
+                          title="Marcar como principal"
+                        >
+                          <svg
+                            className="w-4 h-4 text-gray-400 opacity-0 group-hover:opacity-100"
+                            fill="none"
+                            stroke="currentColor"
+                            viewBox="0 0 24 24"
+                            strokeWidth={2}
+                          >
+                            <path strokeLinecap="round" strokeLinejoin="round" d="M11.48 3.499a.562.562 0 0 1 1.04 0l2.125 5.111a.563.563 0 0 0 .475.345l5.518.442c.499.04.701.663.321.988l-4.204 3.602a.563.563 0 0 0-.182.557l1.285 5.385a.562.562 0 0 1-.84.61l-4.725-2.885a.562.562 0 0 0-.586 0L6.982 20.54a.562.562 0 0 1-.84-.61l1.285-5.386a.562.562 0 0 0-.182-.557l-4.204-3.602a.562.562 0 0 1 .321-.988l5.518-.442a.563.563 0 0 0 .475-.345L11.48 3.5Z" />
+                          </svg>
+                        </button>
+                      )}
+
+                      {/* Delete button - always visible */}
+                      <button
+                        type="button"
+                        onClick={() => handleRemoveImage(index)}
+                        className="absolute top-1 right-1 p-0.5 rounded-full bg-red-500 text-white"
+                        title="Eliminar imagen"
                       >
-                        <path
-                          strokeLinecap="round"
-                          strokeLinejoin="round"
-                          d="M11.48 3.499a.562.562 0 0 1 1.04 0l2.125 5.111a.563.563 0 0 0 .475.345l5.518.442c.499.04.701.663.321.988l-4.204 3.602a.563.563 0 0 0-.182.557l1.285 5.385a.562.562 0 0 1-.84.61l-4.725-2.885a.562.562 0 0 0-.586 0L6.982 20.54a.562.562 0 0 1-.84-.61l1.285-5.386a.562.562 0 0 0-.182-.557l-4.204-3.602a.562.562 0 0 1 .321-.988l5.518-.442a.563.563 0 0 0 .475-.345L11.48 3.5Z"
-                        />
-                      </svg>
-                    </button>
+                        <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={2}>
+                          <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
+                        </svg>
+                      </button>
 
-                    {/* Remove button */}
-                    <button
-                      type="button"
-                      onClick={() => handleRemoveImage(index)}
-                      className="absolute top-0.5 right-0.5 p-0.5 rounded-full bg-red-500 text-white opacity-0 group-hover:opacity-100 transition-opacity"
-                      title="Eliminar imagen"
-                    >
-                      <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={2}>
-                        <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
-                      </svg>
-                    </button>
+                      {/* Reorder arrows */}
+                      <div className="absolute bottom-1 left-1/2 -translate-x-1/2 flex gap-0.5 opacity-0 group-hover:opacity-100 transition-opacity">
+                        {index > 0 && (
+                          <button
+                            type="button"
+                            onClick={() => handleReorder(index, "up")}
+                            className="p-0.5 rounded bg-black/50 text-white hover:bg-black/70"
+                            title="Mover atrás"
+                          >
+                            <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={2}>
+                              <path strokeLinecap="round" strokeLinejoin="round" d="M5 15l7-7 7 7" />
+                            </svg>
+                          </button>
+                        )}
+                        {index < totalCount - 1 && (
+                          <button
+                            type="button"
+                            onClick={() => handleReorder(index, "down")}
+                            className="p-0.5 rounded bg-black/50 text-white hover:bg-black/70"
+                            title="Mover adelante"
+                          >
+                            <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={2}>
+                              <path strokeLinecap="round" strokeLinejoin="round" d="M19 9l-7 7-7-7" />
+                            </svg>
+                          </button>
+                        )}
+                      </div>
 
-                    {/* Reorder arrows */}
-                    <div className="absolute bottom-0.5 left-1/2 -translate-x-1/2 flex gap-0.5 opacity-0 group-hover:opacity-100 transition-opacity">
-                      {index > 0 && (
-                        <button
-                          type="button"
-                          onClick={() => handleReorder(index, "up")}
-                          className="p-0.5 rounded bg-black/50 text-white hover:bg-black/70"
-                          title="Mover atrás"
-                        >
-                          <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={2}>
-                            <path strokeLinecap="round" strokeLinejoin="round" d="M5 15l7-7 7 7" />
-                          </svg>
-                        </button>
-                      )}
-                      {index < totalCount - 1 && (
-                        <button
-                          type="button"
-                          onClick={() => handleReorder(index, "down")}
-                          className="p-0.5 rounded bg-black/50 text-white hover:bg-black/70"
-                          title="Mover adelante"
-                        >
-                          <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={2}>
-                            <path strokeLinecap="round" strokeLinejoin="round" d="M19 9l-7 7-7-7" />
-                          </svg>
-                        </button>
-                      )}
-                    </div>
-
-                    {/* Pending badge */}
-                    {img.isPending && (
-                      <div className="absolute bottom-0.5 left-0.5">
-                        <span className="text-[10px] font-medium bg-green-500 text-white px-1 rounded">
+                      {/* Pending badge */}
+                      {img.isPending && (
+                        <span className="absolute bottom-1 left-1 text-[10px] font-medium bg-green-500 text-white px-1 rounded">
                           Nueva
                         </span>
-                      </div>
-                    )}
+                      )}
+                    </div>
                   </div>
-                </div>
-              ))}
+                ))}
 
-              {/* Add button */}
-              {canAddMore && (
-                <button
-                  type="button"
-                  onClick={() => fileInputRef.current?.click()}
-                  disabled={loading || loadingImages}
-                  className="h-20 w-20 flex items-center justify-center rounded-lg border-2 border-dashed border-gray-300 dark:border-gray-600 hover:border-brand-500 dark:hover:border-brand-500 transition-colors text-gray-400 hover:text-brand-500 disabled:opacity-50 disabled:cursor-not-allowed"
-                >
-                  <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={1.5}>
-                    <path strokeLinecap="round" strokeLinejoin="round" d="M12 4.5v15m7.5-7.5h-15" />
-                  </svg>
-                </button>
+                {/* Add image buttons - inline with images */}
+                {canAddMore && (
+                  <>
+                    <button
+                      type="button"
+                      onClick={() => cameraInputRef.current?.click()}
+                      disabled={loading || loadingImages}
+                      className="flex-none w-[calc((100%-24px)/4)] min-w-[80px] snap-start aspect-square flex flex-col items-center justify-center gap-1 rounded-lg border-2 border-dashed border-gray-300 dark:border-gray-600 hover:border-brand-500 dark:hover:border-brand-500 transition-colors text-gray-400 hover:text-brand-500 disabled:opacity-50 disabled:cursor-not-allowed md:hidden"
+                    >
+                      <CameraIcon className="w-5 h-5" />
+                      <span className="text-[10px]">Cámara</span>
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => fototecaInputRef.current?.click()}
+                      disabled={loading || loadingImages}
+                      className="flex-none w-[calc((100%-24px)/4)] min-w-[80px] snap-start aspect-square flex flex-col items-center justify-center gap-1 rounded-lg border-2 border-dashed border-gray-300 dark:border-gray-600 hover:border-brand-500 dark:hover:border-brand-500 transition-colors text-gray-400 hover:text-brand-500 disabled:opacity-50 disabled:cursor-not-allowed"
+                    >
+                      <ImageIcon className="w-5 h-5" />
+                      <span className="text-[10px] md:hidden">Fototeca</span>
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => archivosInputRef.current?.click()}
+                      disabled={loading || loadingImages}
+                      className="flex-none w-[calc((100%-24px)/4)] min-w-[80px] snap-start aspect-square flex flex-col items-center justify-center gap-1 rounded-lg border-2 border-dashed border-gray-300 dark:border-gray-600 hover:border-brand-500 dark:hover:border-brand-500 transition-colors text-gray-400 hover:text-brand-500 disabled:opacity-50 disabled:cursor-not-allowed"
+                    >
+                      <FolderIcon className="w-5 h-5" />
+                      <span className="text-[10px] md:hidden">Archivos</span>
+                    </button>
+                  </>
+                )}
+              </div>
+
+              <input
+                ref={cameraInputRef}
+                type="file"
+                accept="image/*"
+                capture="environment"
+                onChange={handleAddFiles}
+                className="hidden"
+              />
+              <input
+                ref={fototecaInputRef}
+                type="file"
+                accept="image/*"
+                multiple
+                onChange={handleAddFiles}
+                className="hidden"
+              />
+              <input
+                ref={archivosInputRef}
+                type="file"
+                accept="image/*"
+                multiple
+                onChange={handleAddFiles}
+                className="hidden"
+              />
+
+              {!canAddMore && (
+                <p className="mt-1.5 text-xs text-gray-500 dark:text-gray-400">
+                  Máximo {MAX_IMAGES} imágenes alcanzado.
+                </p>
               )}
-            </div>
 
-            <input
-              ref={fileInputRef}
-              type="file"
-              accept="image/jpeg,image/png,image/webp,image/gif"
-              multiple
-              onChange={handleAddFiles}
-              className="hidden"
-            />
-
-            {!canAddMore && (
-              <p className="mt-1.5 text-xs text-gray-500 dark:text-gray-400">
-                Máximo {MAX_IMAGES} imágenes alcanzado.
-              </p>
-            )}
-
-            {totalCount > 0 && (
-              <p className="mt-1.5 text-xs text-gray-500 dark:text-gray-400">
-                Toca la estrella para marcar como imagen principal. JPG, PNG, WebP o GIF (max 5 MB c/u).
-              </p>
-            )}
-          </div>
-
-          <div className="grid grid-cols-1 gap-5 sm:grid-cols-2">
-            <div>
-              <Label>
-                Nombre <span className="text-error-500">*</span>
-              </Label>
-              <Input
-                type="text"
-                placeholder="Nombre del producto"
-                value={name}
-                onChange={(e) => setName(e.target.value)}
-                required
-                disabled={loading}
-              />
-            </div>
-            <div>
-              <Label>
-                SKU <span className="text-error-500">*</span>
-              </Label>
-              <Input
-                type="text"
-                placeholder={sku && !skuManuallyEdited ? sku : "Ej: HELM-001"}
-                value={sku}
-                onChange={(e) => {
-                  setSku(e.target.value);
-                  setSkuManuallyEdited(true);
-                }}
-                required
-                disabled={loading}
-              />
-              {sku && !skuManuallyEdited && !isEditing && (
-                <p className="mt-1 text-xs text-gray-400 dark:text-gray-500">
-                  Auto-generado. Haz clic para editar.
+              {totalCount > 0 && (
+                <p className="mt-1.5 text-xs text-gray-500 dark:text-gray-400">
+                  Toca la estrella para marcar como principal. Max 5 MB c/u.
                 </p>
               )}
             </div>
+
+            {/* Ganancia card */}
+            {isEditing && canSeeCost && (
+              <div className="hidden md:block rounded-xl bg-green-50 border border-green-200 p-4 dark:bg-green-500/10 dark:border-green-500/30">
+                <p className="text-xs text-green-600 dark:text-green-400 font-medium">
+                  Ganancia por unidad
+                </p>
+                <p className="text-2xl font-bold text-green-700 dark:text-green-400 mt-1">
+                  Bs {ganancia.toFixed(2)}
+                </p>
+                {gananciaPct !== null && (
+                  <p className="text-xs text-green-600 dark:text-green-400 mt-1">
+                    Margen {gananciaPct}%
+                  </p>
+                )}
+              </div>
+            )}
           </div>
 
-          <div className="grid grid-cols-1 gap-5 sm:grid-cols-2">
-            <div>
-              <Label>Codigo de Barras</Label>
-              <Input
-                type="text"
-                placeholder="Codigo de barras"
-                value={barcode}
-                onChange={(e) => setBarcode(e.target.value)}
-                disabled={loading}
-              />
+          {/* Right column: Form fields */}
+          <div className="space-y-5">
+            {/* Name + SKU */}
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <div>
+                <Label>
+                  Nombre <span className="text-error-500">*</span>
+                </Label>
+                <Input
+                  type="text"
+                  placeholder="Nombre del producto"
+                  value={name}
+                  onChange={(e) => setName(e.target.value)}
+                  required
+                  disabled={loading}
+                />
+              </div>
+              <div>
+                <Label>
+                  SKU <span className="text-error-500">*</span>
+                </Label>
+                <Input
+                  type="text"
+                  placeholder={sku && !skuManuallyEdited ? sku : "Ej: HELM-001"}
+                  value={sku}
+                  onChange={(e) => {
+                    setSku(e.target.value);
+                    setSkuManuallyEdited(true);
+                  }}
+                  required
+                  disabled={loading}
+                />
+                {sku && !skuManuallyEdited && !isEditing && (
+                  <p className="mt-1 text-xs text-gray-400 dark:text-gray-500">
+                    Auto-generado. Haz clic para editar.
+                  </p>
+                )}
+              </div>
             </div>
-            <div>
-              <Label>
-                Precio Unitario <span className="text-error-500">*</span>
-              </Label>
-              <Input
-                type="number"
-                placeholder="0.00"
-                value={unitPrice}
-                onChange={(e) => setUnitPrice(e.target.value)}
-                step={0.01}
-                min="0"
-                required
-                disabled={loading}
-              />
-            </div>
-          </div>
 
-          {(canSeeWholesale || canSeeCost) && (
-            <div className="grid grid-cols-1 gap-5 sm:grid-cols-2">
-              {canSeeWholesale && (
+            {/* PRECIOS */}
+            <div>
+              <p className="text-xs font-semibold uppercase text-gray-400 dark:text-gray-500 tracking-wider mb-3">
+                Precios
+              </p>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div>
-                  <Label>Precio por Mayor</Label>
+                  <Label>
+                    Precio venta <span className="text-error-500">*</span>
+                  </Label>
                   <Input
                     type="number"
                     placeholder="0.00"
-                    value={wholesalePrice}
-                    onChange={(e) => setWholesalePrice(e.target.value)}
+                    value={unitPrice}
+                    onChange={(e) => setUnitPrice(e.target.value)}
                     step={0.01}
                     min="0"
+                    required
                     disabled={loading}
                   />
                 </div>
-              )}
-              {canSeeCost && (
-                <>
+                {canSeeCost && (
                   <div>
                     <Label>Costo</Label>
                     <Input
@@ -518,82 +634,140 @@ export default function ProductForm({
                       disabled={loading || !canEditCost}
                     />
                   </div>
-                  <div>
-                    <Label>Costo por Mayor</Label>
-                    <Input
-                      type="number"
-                      placeholder="0.00"
-                      value={wholesaleCostPrice}
-                      onChange={(e) => setWholesaleCostPrice(e.target.value)}
-                      step={0.01}
-                      min="0"
-                      disabled={loading || !canEditCost}
-                    />
+                )}
+              </div>
+
+              {/* Ganancia inline (mobile) */}
+              {canSeeCost && gananciaPct !== null && (
+                <div className="mt-2 sm:hidden rounded-lg bg-green-50 border border-green-200 p-2 dark:bg-green-500/10 dark:border-green-500/30">
+                  <div className="flex items-center justify-between">
+                    <span className="text-xs text-green-600 dark:text-green-400">
+                      Ganancia Bs {ganancia.toFixed(2)}
+                    </span>
+                    <span className="text-xs font-bold text-green-700 dark:text-green-400">
+                      {gananciaPct}%
+                    </span>
                   </div>
-                </>
+                </div>
               )}
             </div>
-          )}
 
-          <div>
-            <Label>Descripcion</Label>
-            <TextArea
-              placeholder="Descripcion del producto"
-              rows={3}
-              value={description}
-              onChange={setDescription}
-              disabled={loading}
-            />
+            {/* Venta por mayor (collapsible) */}
+            {(canSeeWholesale || canSeeCost) && (
+              <CollapsibleSection
+                title="Venta por mayor"
+                isOpen={showWholesale}
+                onToggle={() => setShowWholesale(!showWholesale)}
+              >
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 pt-2">
+                  {canSeeWholesale && (
+                    <div>
+                      <Label>Precio por Mayor</Label>
+                      <Input
+                        type="number"
+                        placeholder="0.00"
+                        value={wholesalePrice}
+                        onChange={(e) => setWholesalePrice(e.target.value)}
+                        step={0.01}
+                        min="0"
+                        disabled={loading}
+                      />
+                    </div>
+                  )}
+                  {canSeeCost && (
+                    <div>
+                      <Label>Costo por Mayor</Label>
+                      <Input
+                        type="number"
+                        placeholder="0.00"
+                        value={wholesaleCostPrice}
+                        onChange={(e) => setWholesaleCostPrice(e.target.value)}
+                        step={0.01}
+                        min="0"
+                        disabled={loading || !canEditCost}
+                      />
+                    </div>
+                  )}
+                </div>
+              </CollapsibleSection>
+            )}
+
+            {/* Clasificación (collapsible) */}
+            <CollapsibleSection
+              title="Clasificación"
+              isOpen={showClassification}
+              onToggle={() => setShowClassification(!showClassification)}
+            >
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 pt-2">
+                <div>
+                  <Label>
+                    Categoría <span className="text-error-500">*</span>
+                  </Label>
+                  <Select
+                    options={categoryOptions}
+                    placeholder="Seleccionar categoría"
+                    onChange={setCategoryId}
+                    defaultValue={categoryId}
+                  />
+                </div>
+                <div>
+                  <Label>Proveedor</Label>
+                  <Select
+                    options={supplierOptions}
+                    placeholder="Seleccionar proveedor"
+                    onChange={setSupplierId}
+                    defaultValue={supplierId}
+                  />
+                </div>
+              </div>
+            </CollapsibleSection>
+
+            {/* Más detalles (collapsible) */}
+            <CollapsibleSection
+              title="Más detalles"
+              isOpen={showDetails}
+              onToggle={() => setShowDetails(!showDetails)}
+            >
+              <div className="space-y-4 pt-2">
+                <div>
+                  <Label>Código de barras</Label>
+                  <Input
+                    type="text"
+                    placeholder="Código de barras"
+                    value={barcode}
+                    onChange={(e) => setBarcode(e.target.value)}
+                    disabled={loading}
+                  />
+                </div>
+                <div>
+                  <Label>Descripción</Label>
+                  <TextArea
+                    placeholder="Descripción del producto"
+                    rows={3}
+                    value={description}
+                    onChange={setDescription}
+                    disabled={loading}
+                  />
+                </div>
+                <div>
+                  <Label>Peso (kg)</Label>
+                  <Input
+                    type="number"
+                    placeholder="0.00"
+                    value={weight}
+                    onChange={(e) => setWeight(e.target.value)}
+                    step={0.01}
+                    min="0"
+                    disabled={loading}
+                  />
+                </div>
+              </div>
+            </CollapsibleSection>
           </div>
-
-          <div className="grid grid-cols-1 gap-5 sm:grid-cols-3">
-            <div>
-              <Label>Peso (kg)</Label>
-              <Input
-                type="number"
-                placeholder="0.00"
-                value={weight}
-                onChange={(e) => setWeight(e.target.value)}
-                step={0.01}
-                min="0"
-                disabled={loading}
-              />
-            </div>
-            <div>
-              <Label>
-                Categoria <span className="text-error-500">*</span>
-              </Label>
-              <Select
-                options={categoryOptions}
-                placeholder="Seleccionar categoria"
-                onChange={setCategoryId}
-                defaultValue={categoryId}
-              />
-            </div>
-            <div>
-              <Label>Proveedor</Label>
-              <Select
-                options={supplierOptions}
-                placeholder="Seleccionar proveedor"
-                onChange={setSupplierId}
-                defaultValue={supplierId}
-              />
-            </div>
-          </div>
-
-          {isEditing && (
-            <div>
-              <Checkbox
-                label="Producto activo"
-                checked={isActive}
-                onChange={setIsActive}
-                disabled={loading}
-              />
-            </div>
-          )}
         </div>
 
-        <div className="mt-6 flex items-center justify-end gap-3">
+        {/* Footer */}
+        <div className="mt-6 flex items-center justify-end gap-3 border-t border-gray-100 pt-4 dark:border-gray-700">
           <Button variant="outline" size="sm" onClick={handleClose} disabled={loading}>
             Cancelar
           </Button>
@@ -612,9 +786,9 @@ export default function ProductForm({
                 Guardando...
               </span>
             ) : isEditing ? (
-              "Actualizar"
+              "Guardar cambios"
             ) : (
-              "Crear"
+              "Crear producto"
             )}
           </Button>
         </div>

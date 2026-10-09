@@ -96,7 +96,7 @@ export default function DashboardPage() {
             ? all.filter((w) => userWarehouseIds.includes(w.id))
             : all;
         setWarehouses(filtered);
-        setSelectedWarehouseIds(filtered.map((w) => w.id));
+        setSelectedWarehouseIds([]);
         warehousesLoadedRef.current = true;
       } catch {
         // If fetch fails, leave empty — dashboard will still load
@@ -142,9 +142,6 @@ export default function DashboardPage() {
 
       {/* Header with warehouse pills */}
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-6">
-        <h1 className="text-2xl font-bold text-gray-800 dark:text-white/90">
-          Resumen
-        </h1>
         <div className="flex gap-2 overflow-x-auto pb-2 custom-scrollbar">
           <button
             onClick={() => setSelectedWarehouseIds([])}
