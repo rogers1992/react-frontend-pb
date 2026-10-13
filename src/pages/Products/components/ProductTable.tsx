@@ -89,8 +89,8 @@ export function getProductColumns(
       header: "Costo Actual",
       sortable: true,
       render: (item: Product) => {
-        if (item.current_cost === null || item.current_cost === undefined) return "—";
-        const cost = typeof item.current_cost === "string" ? parseFloat(item.current_cost) : item.current_cost;
+        const cost = typeof item.effective_cost === "string" ? parseFloat(item.effective_cost) : item.effective_cost;
+        if (cost === null || cost === undefined || cost === 0) return "—";
         return `Bs${cost.toFixed(2)}`;
       },
     },
@@ -99,8 +99,8 @@ export function getProductColumns(
       header: "Margen %",
       sortable: true,
       render: (item: Product) => {
-        if (item.current_cost === null || item.current_cost === undefined || item.current_cost === 0) return "—";
-        const cost = typeof item.current_cost === "string" ? parseFloat(item.current_cost) : item.current_cost;
+        const cost = typeof item.effective_cost === "string" ? parseFloat(item.effective_cost) : item.effective_cost;
+        if (cost === null || cost === undefined || cost === 0) return "—";
         const price = typeof item.unit_price === "string" ? parseFloat(item.unit_price) : item.unit_price;
         const margin = ((price - cost) / price) * 100;
         const cls =
