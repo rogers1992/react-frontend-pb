@@ -39,11 +39,10 @@ export default function PurchaseProductGrid({
       const matchesCategory =
         selectedCategory === "all" || p.category_id === selectedCategory;
 
-      // When wholesale warehouse selected, only show products with wholesale cost
+      // When wholesale warehouse selected, only show products with both wholesale price and cost configured
       const matchesWholesale =
         !selectedWarehouse?.is_wholesale ||
-        p.wholesale_cost_price != null ||
-        p.current_wholesale_cost != null;
+        (p.wholesale_price != null && p.wholesale_cost_price != null);
 
       return matchesSearch && matchesCategory && matchesWholesale;
     });
@@ -121,8 +120,8 @@ export default function PurchaseProductGrid({
             const alreadyInCart = inCartIds.has(product.id);
 
             const relevantCost = selectedWarehouse?.is_wholesale
-              ? (product.current_wholesale_cost ?? product.wholesale_cost_price)
-              : (product.current_cost ?? product.cost_price);
+              ? (product.wholesale_cost_price ?? product.current_wholesale_cost)
+              : (product.cost_price ?? product.current_cost);
 
             return (
               <div

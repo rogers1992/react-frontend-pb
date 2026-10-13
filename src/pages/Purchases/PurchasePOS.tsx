@@ -90,9 +90,9 @@ export default function PurchasePOS() {
 
   const getDefaultCost = useCallback((product: Product): number => {
     if (selectedWarehouse?.is_wholesale) {
-      return product.current_wholesale_cost ?? product.wholesale_cost_price ?? 0;
+      return product.wholesale_cost_price ?? product.current_wholesale_cost ?? 0;
     }
-    return product.current_cost ?? product.cost_price ?? 0;
+    return product.cost_price ?? product.current_cost ?? 0;
   }, [selectedWarehouse]);
 
   const addToCart = useCallback((product: Product) => {
