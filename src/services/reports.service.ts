@@ -187,14 +187,49 @@ export const reportsService = {
   ): Promise<Blob> => {
     try {
       const response = await api.get(`/reports/export`, {
-        params: { report, ...params },
+        params: { report, format: 'csv', ...params },
         responseType: 'blob',
         signal,
       });
       return response.data as Blob;
     } catch (error) {
       await normalizeBlobError(error as AxiosError);
-      // Unreachable: normalizeBlobError always throws.
+      throw error;
+    }
+  },
+
+  exportXlsx: async (
+    report: ReportType,
+    params: ExportParams = {},
+    signal?: AbortSignal,
+  ): Promise<Blob> => {
+    try {
+      const response = await api.get(`/reports/export`, {
+        params: { report, format: 'xlsx', ...params },
+        responseType: 'blob',
+        signal,
+      });
+      return response.data as Blob;
+    } catch (error) {
+      await normalizeBlobError(error as AxiosError);
+      throw error;
+    }
+  },
+
+  exportPdf: async (
+    report: ReportType,
+    params: ExportParams = {},
+    signal?: AbortSignal,
+  ): Promise<Blob> => {
+    try {
+      const response = await api.get(`/reports/export`, {
+        params: { report, format: 'pdf', ...params },
+        responseType: 'blob',
+        signal,
+      });
+      return response.data as Blob;
+    } catch (error) {
+      await normalizeBlobError(error as AxiosError);
       throw error;
     }
   },
