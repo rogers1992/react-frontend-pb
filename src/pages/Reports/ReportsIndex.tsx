@@ -339,7 +339,7 @@ export default function ReportsIndex() {
     fetchData();
   }, [fetchData]);
 
-  const handleExport = async () => {
+  const handleExport = async (format: "csv" | "xlsx" | "pdf" = "csv") => {
     try {
       setExporting(true);
       const params: {
@@ -362,11 +362,24 @@ export default function ReportsIndex() {
       ) {
         params.warehouse_id = selectedWarehouseIds;
       }
-      const blob = await reportsService.exportCsv(activeTab, params);
-      downloadBlob(blob, downloadableFilenames[activeTab]);
+
+      const ext = format === "xlsx" ? "xlsx" : format === "pdf" ? "pdf" : "csv";
+      const filenameBase = downloadableFilenames[activeTab].replace(/\.(csv|xlsx|pdf)$/, "");
+      const filename = `${filenameBase}.${ext}`;
+
+      let blob: Blob;
+      if (format === "xlsx") {
+        blob = await reportsService.exportXlsx(activeTab, params);
+      } else if (format === "pdf") {
+        blob = await reportsService.exportPdf(activeTab, params);
+      } else {
+        blob = await reportsService.exportCsv(activeTab, params);
+      }
+
+      downloadBlob(blob, filename);
       showToast({
         type: "success",
-        message: "Reporte exportado correctamente.",
+        message: `Reporte exportado correctamente en formato ${format.toUpperCase()}.`,
       });
     } catch (err) {
       const message = getErrorMessage(err, "Error al exportar el reporte.");
@@ -534,15 +547,26 @@ export default function ReportsIndex() {
         searchPlaceholder="Buscar..."
         emptyMessage="No se encontraron registros."
         actions={
-          <Button
-            size="sm"
-            variant="outline"
-            startIcon={<DownloadIcon />}
-            onClick={handleExport}
-            disabled={exporting || loading || data.length === 0}
-          >
-            {exporting ? "Exportando..." : "Exportar CSV"}
-          </Button>
+          <div className="flex gap-2">
+            <Button
+              size="sm"
+              variant="outline"
+              startIcon={<DownloadIcon />}
+              onClick={() => handleExport("csv")}
+              disabled={exporting || loading || data.length === 0}
+            >
+              {exporting ? "Exportando..." : "CSV"}
+            </Button>
+            <Button
+              size="sm"
+              variant="outline"
+              startIcon={<DownloadIcon />}
+              onClick={() => handleExport("xlsx")}
+              disabled={exporting || loading || data.length === 0}
+            >
+              {exporting ? "Exportando..." : "XLSX"}
+            </Button>
+          </div>
         }
         renderFooter={(filteredData) => {
           const filteredTotals = computeTotalsFromData(activeTab, filteredData);

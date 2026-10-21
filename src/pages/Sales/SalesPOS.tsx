@@ -25,6 +25,7 @@ interface CartItem {
   product: Product;
   quantity: number;
   discount: number;
+  isWholesale: boolean;
 }
 
 export default function SalesIndex() {
@@ -56,6 +57,17 @@ export default function SalesIndex() {
   const abortRef = useRef<AbortController | null>(null);
   const invAbortRef = useRef<AbortController | null>(null);
   const prevWarehouseIdRef = useRef<number | null>(null);
+
+  const getActivePrice = useCallback((product: Product, isWholesale: boolean): number => {
+    if (isWholesale && product.wholesale_price != null) {
+      return typeof product.wholesale_price === "string"
+        ? parseFloat(product.wholesale_price)
+        : product.wholesale_price;
+    }
+    return typeof product.unit_price === "string"
+      ? parseFloat(product.unit_price)
+      : product.unit_price;
+  }, []);
 
   const fetchData = useCallback(async () => {
     abortRef.current?.abort();
@@ -152,9 +164,10 @@ export default function SalesIndex() {
           i.product.id === product.id ? { ...i, quantity: i.quantity + quantity } : i
         );
       }
-      return [...prev, { product, quantity, discount: 0 }];
+      const isWholesale = !!selectedWarehouse?.is_wholesale && product.wholesale_price != null;
+      return [...prev, { product, quantity, discount: 0, isWholesale }];
     });
-  }, []);
+  }, [selectedWarehouse]);
 
   const handleProductClick = useCallback((product: Product) => {
     setSelectedProduct(product);
@@ -224,12 +237,13 @@ export default function SalesIndex() {
         payment_method: paymentMethod,
         notes: notes || undefined,
         items: cart.map((item) => {
-          const price = typeof item.product.unit_price === "string" ? parseFloat(item.product.unit_price) : item.product.unit_price;
+          const price = getActivePrice(item.product, item.isWholesale);
           return {
             product_id: item.product.id,
             quantity: item.quantity,
             unit_price: price,
             discount: item.discount || 0,
+            is_wholesale: item.isWholesale,
           };
         }),
       };
@@ -244,7 +258,7 @@ export default function SalesIndex() {
     } finally {
       setSubmitting(false);
     }
-  }, [cart, selectedCustomer, selectedWarehouse, paymentMethod, notes, showToast, hasOpenSession, fetchInventory]);
+  }, [cart, selectedCustomer, selectedWarehouse, paymentMethod, notes, showToast, hasOpenSession, fetchInventory, getActivePrice]);
 
   const handleNewSale = useCallback(() => {
     setShowReceipt(false);
@@ -262,14 +276,12 @@ export default function SalesIndex() {
 
   const cartTotal = useMemo(() =>
     cart.reduce((sum, item) => {
-      const price = typeof item.product.unit_price === "string"
-        ? parseFloat(item.product.unit_price)
-        : item.product.unit_price;
+      const price = getActivePrice(item.product, item.isWholesale);
       const discount = item.discount || 0;
       const subtotal = price * item.quantity - discount;
       return sum + subtotal + subtotal * TAX_RATE;
     }, 0),
-    [cart]
+    [cart, getActivePrice]
   );
 
   const customerName = useMemo(() => {
@@ -302,6 +314,7 @@ export default function SalesIndex() {
             onAddToCart={addToCart}
             onProductClick={handleProductClick}
             cart={cart}
+            wholesaleMode={selectedWarehouse?.is_wholesale ?? false}
           />
         </div>
         <div className="xl:col-span-1">
@@ -330,6 +343,7 @@ export default function SalesIndex() {
               onNotesChange={setNotes}
               onConfirm={openReview}
               onCancel={handleCancel}
+              getActivePrice={getActivePrice}
             />
           </CartDrawer>
         </div>
@@ -342,6 +356,7 @@ export default function SalesIndex() {
         selectedWarehouse={selectedWarehouse}
         paymentMethod={paymentMethod}
         notes={notes}
+        getActivePrice={getActivePrice}
         onConfirm={confirmSale}
         onBack={() => setShowReview(false)}
       />
@@ -350,6 +365,7 @@ export default function SalesIndex() {
         isOpen={showReceipt}
         sale={lastSale}
         customerName={customerName}
+        sellerName={user ? `${user.first_name} ${user.last_name}` : "Sistema"}
         onClose={() => setShowReceipt(false)}
         onNewSale={handleNewSale}
       />
@@ -362,6 +378,8 @@ export default function SalesIndex() {
         availableStock={selectedProduct
           ? Math.max(0, (warehouseInventory.get(selectedProduct.id) ?? 0) - (cart.find((i) => i.product.id === selectedProduct.id)?.quantity ?? 0))
           : 0}
+        wholesaleMode={selectedWarehouse?.is_wholesale ?? false}
+        getActivePrice={getActivePrice}
         onClose={() => setShowProductDetail(false)}
         onAddToCart={handleAddToCartFromModal}
       />

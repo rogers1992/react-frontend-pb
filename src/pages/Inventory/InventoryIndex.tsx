@@ -25,6 +25,7 @@ import InventoryForm from "./components/InventoryForm";
 import { getInventoryColumns } from "./components/InventoryTable";
 import TransferModal from "./components/TransferModal";
 import SearchInput from "../../components/common/SearchInput";
+import InventoryCard from "./components/InventoryCard";
 
 type StatusFilter = "all" | "stock_bajo" | "normal";
 
@@ -102,6 +103,14 @@ export default function InventoryIndex() {
   useEffect(() => {
     fetchData();
   }, [fetchData]);
+
+  // Check URL params on mount for auto-filtering
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    if (params.get("status") === "stock_bajo") {
+      setStatusFilter("stock_bajo");
+    }
+  }, []);
 
   const refreshData = async () => {
     fetchData();
@@ -202,7 +211,7 @@ export default function InventoryIndex() {
   };
 
   const productMap = useMemo(
-    () => new Map(products.map((p) => [p.id, { name: p.name, sku: p.sku, category_id: p.category_id }])),
+    () => new Map(products.map((p) => [p.id, p])),
     [products],
   );
   const warehouseMap = useMemo(
@@ -249,36 +258,45 @@ export default function InventoryIndex() {
 
       <PageBreadcrumb pageTitle="Inventario" />
 
-      <div className="grid grid-cols-1 gap-4 mb-6 sm:grid-cols-2 lg:grid-cols-4">
-        <div className="rounded-xl border border-gray-200 bg-white p-5 dark:border-white/[0.05] dark:bg-white/[0.03]">
-          <p className="text-sm text-gray-500 dark:text-gray-400">
-            Total Registros
-          </p>
-          <p className="mt-1 text-2xl font-semibold text-gray-800 dark:text-white/90">
+      <div className="flex gap-3 overflow-x-auto pb-2 custom-scrollbar mb-4">
+        <button
+          onClick={() => setStatusFilter("all")}
+          className={`shrink-0 rounded-xl border-2 px-5 py-3 min-w-[140px] text-left transition ${
+            statusFilter === "all"
+              ? "border-brand-500 bg-white"
+              : "border-gray-200 bg-white dark:border-gray-700 dark:bg-gray-800"
+          }`}
+        >
+          <p className="text-sm text-gray-500 dark:text-gray-400">Productos Registrados</p>
+          <p className="text-2xl font-semibold text-gray-800 dark:text-white/90">
             {summary.total_items}
           </p>
-        </div>
-        <div className="rounded-xl border border-gray-200 bg-white p-5 dark:border-white/[0.05] dark:bg-white/[0.03]">
-          <p className="text-sm text-gray-500 dark:text-gray-400">
-            Almacenes Activos
+        </button>
+
+        <button
+          onClick={() => setStatusFilter("stock_bajo")}
+          className={`shrink-0 rounded-xl border-2 px-5 py-3 min-w-[140px] text-left transition ${
+            statusFilter === "stock_bajo"
+              ? "border-red-300 bg-red-50 dark:border-red-500/30 dark:bg-red-500/10"
+              : "border-red-200 bg-red-50 dark:border-red-500/20 dark:bg-red-500/10"
+          }`}
+        >
+          <p className="text-sm text-red-600 dark:text-red-400">Stock bajo</p>
+          <p className="text-2xl font-semibold text-red-700 dark:text-red-400">
+            {summary.low_stock_count}
           </p>
-          <p className="mt-1 text-2xl font-semibold text-gray-800 dark:text-white/90">
+        </button>
+
+        <div className="shrink-0 rounded-xl border-2 border-gray-200 bg-white px-5 py-3 min-w-[140px] dark:border-gray-700 dark:bg-gray-800">
+          <p className="text-sm text-gray-500 dark:text-gray-400">Almacenes</p>
+          <p className="text-2xl font-semibold text-gray-800 dark:text-white/90">
             {summary.total_warehouses}
           </p>
         </div>
-        <div className="rounded-xl border border-gray-200 bg-white p-5 dark:border-white/[0.05] dark:bg-white/[0.03]">
-          <p className="text-sm text-gray-500 dark:text-gray-400">
-            Stock Bajo
-          </p>
-          <p className="mt-1 text-2xl font-semibold text-error-500">
-            {summary.low_stock_count}
-          </p>
-        </div>
-        <div className="rounded-xl border border-gray-200 bg-white p-5 dark:border-white/[0.05] dark:bg-white/[0.03]">
-          <p className="text-sm text-gray-500 dark:text-gray-400">
-            Cantidad Total
-          </p>
-          <p className="mt-1 text-2xl font-semibold text-gray-800 dark:text-white/90">
+
+        <div className="shrink-0 rounded-xl border-2 border-gray-200 bg-white px-5 py-3 min-w-[140px] dark:border-gray-700 dark:bg-gray-800">
+          <p className="text-sm text-gray-500 dark:text-gray-400">Inventario Total</p>
+          <p className="text-2xl font-semibold text-gray-800 dark:text-white/90">
             {summary.total_quantity}
           </p>
         </div>
@@ -381,21 +399,61 @@ export default function InventoryIndex() {
         ))}
       </div>
 
-      <DataTable<InventoryItem>
-        columns={columns}
-        data={filteredInventory}
-        loading={loading}
-        emptyMessage="No se encontraron registros de inventario."
-        serverSide={false}
-        totalItems={filteredInventory.length}
-        currentPage={page}
-        pageSize={pageSize}
-        onPageChange={setPage}
-        onPageSizeChange={(newSize) => {
-          setPageSize(newSize);
-          setPage(0);
-        }}
-      />
+      {/* Desktop: table */}
+      <div className="hidden md:block">
+        <DataTable<InventoryItem>
+          columns={columns}
+          data={filteredInventory}
+          loading={loading}
+          emptyMessage="No se encontraron registros de inventario."
+          serverSide={false}
+          totalItems={filteredInventory.length}
+          currentPage={page}
+          pageSize={pageSize}
+          onPageChange={setPage}
+          onPageSizeChange={(newSize) => {
+            setPageSize(newSize);
+            setPage(0);
+          }}
+        />
+      </div>
+
+      {/* Mobile: card grid */}
+      <div className="md:hidden">
+        {loading ? (
+          <div className="grid grid-cols-2 gap-4">
+            {Array.from({ length: 6 }).map((_, i) => (
+              <div key={i} className="rounded-xl border border-gray-200 bg-white dark:border-white/[0.05] dark:bg-gray-800 overflow-hidden">
+                <div className="aspect-square bg-gray-100 dark:bg-gray-700 animate-pulse" />
+                <div className="p-2 space-y-2">
+                  <div className="h-4 bg-gray-200 dark:bg-gray-700 rounded animate-pulse" />
+                  <div className="h-3 bg-gray-200 dark:bg-gray-700 rounded animate-pulse w-2/3" />
+                </div>
+              </div>
+            ))}
+          </div>
+        ) : filteredInventory.length === 0 ? (
+          <div className="flex flex-col items-center justify-center py-16 text-gray-400">
+            <p className="text-sm">No se encontraron registros de inventario.</p>
+          </div>
+        ) : (
+          <>
+            <div className="grid grid-cols-2 gap-4">
+              {filteredInventory.map((item) => (
+                  <InventoryCard
+                    key={item.id}
+                    item={item}
+                    product={productMap.get(item.product_id)}
+                    warehouseName={warehouseMap.get(item.warehouse_id) || `Almacén #${item.warehouse_id}`}
+                    onEdit={handleOpenEdit}
+                    onTransfer={handleOpenTransfer}
+                    onDelete={handleOpenDelete}
+                  />
+                ))}
+            </div>
+          </>
+        )}
+      </div>
 
       <InventoryForm
         isOpen={isFormOpen}

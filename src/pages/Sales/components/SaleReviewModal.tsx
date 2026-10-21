@@ -8,6 +8,7 @@ interface CartItem {
   product: Product;
   quantity: number;
   discount: number;
+  isWholesale: boolean;
 }
 
 interface SaleReviewModalProps {
@@ -17,6 +18,7 @@ interface SaleReviewModalProps {
   selectedWarehouse: Warehouse | null;
   paymentMethod: string;
   notes: string;
+  getActivePrice: (product: Product, isWholesale: boolean) => number;
   onConfirm: () => void;
   onBack: () => void;
 }
@@ -34,6 +36,7 @@ export default function SaleReviewModal({
   selectedWarehouse,
   paymentMethod,
   notes,
+  getActivePrice,
   onConfirm,
   onBack,
 }: SaleReviewModalProps) {
@@ -45,10 +48,7 @@ export default function SaleReviewModal({
 
   const totals = cart.reduce(
     (acc, item) => {
-      const price =
-        typeof item.product.unit_price === "string"
-          ? parseFloat(item.product.unit_price)
-          : item.product.unit_price;
+      const price = getActivePrice(item.product, item.isWholesale);
       const lineTotal = price * item.quantity - (item.discount || 0);
       acc.subtotal += lineTotal;
       acc.items += item.quantity;
@@ -138,10 +138,7 @@ export default function SaleReviewModal({
             <tbody className="divide-y divide-gray-100 dark:divide-gray-700">
               {cart.map((item) => {
                 const url = resolveImageUrl(item.product.image_url);
-                const price =
-                  typeof item.product.unit_price === "string"
-                    ? parseFloat(item.product.unit_price)
-                    : item.product.unit_price;
+                const price = getActivePrice(item.product, item.isWholesale);
                 const lineTotal = price * item.quantity - (item.discount || 0);
 
                 return (

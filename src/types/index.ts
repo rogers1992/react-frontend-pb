@@ -25,6 +25,7 @@ export const VALID_RESOURCES = [
   "suppliers",
   "cash_register",
   "expenses",
+  "wholesale",
 ] as const;
 
 export const VALID_ACTIONS = ["read", "create", "update", "delete"] as const;
@@ -42,6 +43,7 @@ export const RESOURCE_LABELS: Record<string, string> = {
   suppliers: "Proveedores",
   cash_register: "Caja",
   expenses: "Gastos",
+  wholesale: "Ventas por Mayor",
 };
 
 export const ACTION_LABELS: Record<string, string> = {
@@ -194,6 +196,10 @@ export interface Product {
   barcode?: string;
   description?: string;
   unit_price: number;
+  wholesale_price: number | null;
+  cost_price: number | null;
+  wholesale_cost_price: number | null;
+  effective_cost: number | null;
   weight?: number;
   image_url?: string;
   category_id: number;
@@ -202,6 +208,7 @@ export interface Product {
   created_at: string;
   updated_at: string;
   current_cost: number | null;
+  current_wholesale_cost?: number | null;
   images?: ProductImage[];
 }
 
@@ -215,6 +222,9 @@ export interface ProductCreate {
   barcode?: string;
   description?: string;
   unit_price: number;
+  wholesale_price?: number | null;
+  cost_price?: number | null;
+  wholesale_cost_price?: number | null;
   weight?: number;
   category_id: number;
   supplier_id?: number | null;
@@ -231,6 +241,9 @@ export interface ProductUpdate {
   barcode?: string;
   description?: string;
   unit_price: number;
+  wholesale_price?: number | null;
+  cost_price?: number | null;
+  wholesale_cost_price?: number | null;
   weight?: number;
   image_url?: string | null;
   category_id?: number;
@@ -393,18 +406,21 @@ export interface Warehouse {
   name: string;
   location: string | null;
   is_active: boolean;
+  is_wholesale?: boolean;
   created_at: string;
 }
 
 export interface WarehouseCreate {
   name: string;
   location?: string;
+  is_wholesale?: boolean;
 }
 
 export interface WarehouseUpdate {
   name?: string;
   location?: string;
   is_active?: boolean;
+  is_wholesale?: boolean;
 }
 
 // =========================
@@ -463,6 +479,7 @@ export interface SaleItem {
   unit_price: number;
   discount: number;
   total_price: number;
+  is_wholesale?: boolean;
 }
 
 /**
@@ -474,6 +491,7 @@ export interface SaleItemCreate {
   quantity: number;
   unit_price: number;
   discount?: number;
+  is_wholesale?: boolean;
 }
 
 /**

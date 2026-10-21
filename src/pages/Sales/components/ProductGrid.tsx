@@ -7,6 +7,7 @@ interface CartItem {
   product: Product;
   quantity: number;
   discount: number;
+  isWholesale: boolean;
 }
 
 interface ProductGridProps {
@@ -21,6 +22,7 @@ interface ProductGridProps {
   onAddToCart: (product: Product) => void;
   onProductClick: (product: Product) => void;
   cart: CartItem[];
+  wholesaleMode: boolean;
 }
 
 export default function ProductGrid({
@@ -35,6 +37,7 @@ export default function ProductGrid({
   onAddToCart,
   onProductClick,
   cart,
+  wholesaleMode,
 }: ProductGridProps) {
   const filtered = useMemo(() => {
     return products.filter((p) => {
@@ -45,9 +48,10 @@ export default function ProductGrid({
         p.barcode?.toLowerCase().includes(searchQuery.toLowerCase());
       const matchesCategory =
         selectedCategory === "all" || p.category_id === selectedCategory;
-      return matchesSearch && matchesCategory;
+      const matchesWholesale = !wholesaleMode || p.wholesale_price != null;
+      return matchesSearch && matchesCategory && matchesWholesale;
     });
-  }, [products, searchQuery, selectedCategory]);
+  }, [products, searchQuery, selectedCategory, wholesaleMode]);
 
   const categoryMap = useMemo(() => {
     const map = new Map<number, Category>();
@@ -122,6 +126,7 @@ export default function ProductGrid({
               warehouseSelected={warehouseSelected}
               onAdd={() => onAddToCart(product)}
               onClick={() => onProductClick(product)}
+              wholesaleMode={wholesaleMode}
             />
             );
           })}

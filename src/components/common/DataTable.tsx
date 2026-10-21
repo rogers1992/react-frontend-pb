@@ -213,7 +213,7 @@ export default function DataTable<T>({
                   <TableCell
                     key={col.key}
                     isHeader
-                    className={`px-5 py-3 font-medium text-gray-500 text-start text-theme-xs dark:text-gray-400 ${
+                    className={`px-3 py-3 font-medium text-gray-500 text-start text-theme-xs dark:text-gray-400 ${
                       col.sortable
                         ? "cursor-pointer select-none hover:text-gray-700 dark:hover:text-gray-200"
                         : ""
@@ -260,7 +260,7 @@ export default function DataTable<T>({
                     {columns.map((col) => (
                       <TableCell
                         key={col.key}
-                        className={`px-5 py-4 text-gray-500 text-start text-theme-sm dark:text-gray-400 ${col.className ?? ""}`}
+                        className={`px-3 py-4 text-gray-500 text-start text-theme-sm dark:text-gray-400 ${col.className ?? ""}`}
                       >
                         {col.render
                           ? col.render(item)

@@ -11,11 +11,17 @@ interface ProductCardProps {
   warehouseSelected: boolean;
   onAdd: () => void;
   onClick: () => void;
+  wholesaleMode: boolean;
 }
 
 function getStockBadge(stock: number, available: number) {
-  if (stock === 0) return { color: "error" as const, label: available > 0 ? `Agotado (${available})` : "Agotado" };
-  if (stock <= 10) return { color: "warning" as const, label: `Poco stock (${available})` };
+  if (stock === 0)
+    return {
+      color: "error" as const,
+      label: available > 0 ? `Agotado (${available})` : "Agotado",
+    };
+  if (stock <= 10)
+    return { color: "warning" as const, label: `Poco stock (${available})` };
   return { color: "success" as const, label: `En stock (${available})` };
 }
 
@@ -27,14 +33,23 @@ export default function ProductCard({
   warehouseSelected,
   onAdd,
   onClick,
+  wholesaleMode,
 }: ProductCardProps) {
   const url = resolveImageUrl(product.image_url);
-  const { color, label } = warehouseSelected ? getStockBadge(stockQuantity, availableStock) : { color: "warning" as const, label: "Sin almacén" };
+  const { color, label } = warehouseSelected
+    ? getStockBadge(stockQuantity, availableStock)
+    : { color: "warning" as const, label: "Sin almacén" };
   const isDisabled = !warehouseSelected || availableStock === 0;
   const price =
     typeof product.unit_price === "string"
       ? parseFloat(product.unit_price)
       : product.unit_price;
+  const wholesalePrice =
+    product.wholesale_price != null
+      ? typeof product.wholesale_price === "string"
+        ? parseFloat(product.wholesale_price)
+        : product.wholesale_price
+      : null;
 
   return (
     <div
@@ -68,7 +83,7 @@ export default function ProductCard({
           </Badge>
         </div>
       </div>
-      <div className="p-3 space-y-2">
+      <div className="p-2 space-y-2">
         <p className="font-medium text-gray-800 dark:text-white/90 truncate text-sm">
           {product.name}
         </p>
@@ -87,10 +102,34 @@ export default function ProductCard({
           </p>
         )}
 
-        <div className="flex items-center justify-between gap-2 pt-1">
-          <p className="text-brand-500 font-semibold text-lg">
-            Bs{price.toFixed(2)}
-          </p>
+        {wholesaleMode && wholesalePrice != null ? (
+          <div className="bg-gray-100 dark:bg-gray-700/50 rounded-lg p-2 mt-1">
+            <div className="flex items-center justify-between gap-1">
+              <div>
+                <p className="text-gray-800 dark:text-white/90 font-semibold text-lg">
+                  Bs{wholesalePrice.toFixed(2)}
+                </p>
+                <p className="text-xs text-gray-500 dark:text-gray-400">
+                  (por mayor)
+                </p>
+              </div>
+              <button
+                onClick={(e) => {
+                  e.stopPropagation();
+                  onAdd();
+                }}
+                disabled={isDisabled}
+                className="flex items-center justify-center bg-brand-500 text-white rounded-lg px-3 py-1.5 text-xs font-medium hover:bg-brand-600 disabled:opacity-50 disabled:cursor-not-allowed transition"
+              >
+                Agregar
+              </button>
+            </div>
+          </div>
+        ) : (
+          <div className="flex items-center justify-between gap-2 pt-1">
+            <p className="text-brand-500 font-semibold text-lg">
+              Bs{price.toFixed(2)}
+            </p>
             <button
               onClick={(e) => {
                 e.stopPropagation();
@@ -101,7 +140,8 @@ export default function ProductCard({
             >
               Agregar
             </button>
-        </div>
+          </div>
+        )}
       </div>
     </div>
   );

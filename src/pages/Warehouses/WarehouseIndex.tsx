@@ -29,6 +29,7 @@ export default function WarehouseIndex() {
   const [name, setName] = useState("");
   const [location, setLocation] = useState("");
   const [isActive, setIsActive] = useState(true);
+  const [isWholesale, setIsWholesale] = useState(false);
 
   const [deleteTarget, setDeleteTarget] = useState<Warehouse | null>(null);
   const [deleteLoading, setDeleteLoading] = useState(false);
@@ -54,6 +55,7 @@ export default function WarehouseIndex() {
     setName("");
     setLocation("");
     setIsActive(true);
+    setIsWholesale(false);
     setSelectedWarehouse(null);
   };
 
@@ -67,6 +69,7 @@ export default function WarehouseIndex() {
     setName(warehouse.name);
     setLocation(warehouse.location ?? "");
     setIsActive(warehouse.is_active);
+    setIsWholesale(warehouse.is_wholesale ?? false);
     setIsFormOpen(true);
   };
 
@@ -82,6 +85,7 @@ export default function WarehouseIndex() {
       const payload: WarehouseCreate = {
         name,
         location: location || undefined,
+        is_wholesale: isWholesale,
       };
 
       if (selectedWarehouse) {
@@ -89,6 +93,7 @@ export default function WarehouseIndex() {
           name: name || undefined,
           location: location || undefined,
           is_active: isActive,
+          is_wholesale: isWholesale,
         };
         await warehouseService.update(selectedWarehouse.id, updatePayload);
         showToast({
@@ -148,9 +153,14 @@ export default function WarehouseIndex() {
       header: "Nombre",
       sortable: true,
       render: (item: Warehouse) => (
-        <span className="font-medium text-gray-800 dark:text-white/90">
-          {item.name}
-        </span>
+        <div className="flex items-center gap-2">
+          <span className="font-medium text-gray-800 dark:text-white/90">
+            {item.name}
+          </span>
+          {item.is_wholesale && (
+            <Badge size="sm" color="info">Mayorista</Badge>
+          )}
+        </div>
       ),
     },
     {
@@ -264,6 +274,15 @@ export default function WarehouseIndex() {
                 placeholder="Direccion o ubicacion fisica"
                 value={location}
                 onChange={(e) => setLocation(e.target.value)}
+                disabled={formLoading}
+              />
+            </div>
+
+            <div>
+              <Checkbox
+                label="Almacen mayorista"
+                checked={isWholesale}
+                onChange={setIsWholesale}
                 disabled={formLoading}
               />
             </div>

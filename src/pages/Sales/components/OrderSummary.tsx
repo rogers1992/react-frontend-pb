@@ -9,6 +9,7 @@ interface CartItem {
   product: Product;
   quantity: number;
   discount: number;
+  isWholesale: boolean;
 }
 
 interface OrderSummaryProps {
@@ -32,6 +33,7 @@ interface OrderSummaryProps {
   onNotesChange: (notes: string) => void;
   onConfirm: () => void;
   onCancel: () => void;
+  getActivePrice: (product: Product, isWholesale: boolean) => number;
 }
 
 export default function OrderSummary({
@@ -55,15 +57,16 @@ export default function OrderSummary({
   onNotesChange,
   onConfirm,
   onCancel,
+  getActivePrice,
 }: OrderSummaryProps) {
   const totals = useMemo(() => {
     const subtotal = cart.reduce((sum, item) => {
-      const price = typeof item.product.unit_price === "string" ? parseFloat(item.product.unit_price) : item.product.unit_price;
+      const price = getActivePrice(item.product, item.isWholesale);
       return sum + price * item.quantity - (item.discount || 0);
     }, 0);
     const iva = subtotal * TAX_RATE;
     return { subtotal, iva, total: subtotal + iva };
-  }, [cart]);
+  }, [cart, getActivePrice]);
 
   return (
     <div className="sticky top-4 rounded-xl border border-gray-200 bg-white dark:border-white/[0.05] dark:bg-gray-800 p-5 space-y-5">
@@ -169,6 +172,7 @@ export default function OrderSummary({
                 stockQuantity={warehouseInventory.get(item.product.id) ?? 0}
                 onUpdate={(qty, disc) => onUpdateCart(item.product.id, qty, disc)}
                 onRemove={() => onRemoveFromCart(item.product.id)}
+                getActivePrice={getActivePrice}
               />
             ))}
           </div>

@@ -39,6 +39,7 @@ export function getInventoryColumns(
       key: "product",
       header: "Producto",
       sortable: true,
+      className: "max-w-[200px]",
       render: (item: InventoryItem) => {
         const product = productMap.get(item.product_id);
         if (!product) {
@@ -51,7 +52,7 @@ export function getInventoryColumns(
         return (
           <div className="flex items-center gap-3">
             <ProductThumbnail product={product} />
-            <span className="font-medium text-gray-800 dark:text-white/90">
+            <span className="font-medium text-gray-800 dark:text-white/90 break-words">
               {product.name}
             </span>
           </div>
@@ -61,17 +62,22 @@ export function getInventoryColumns(
     {
       key: "sku",
       header: "SKU",
+      className: "max-w-[120px]",
       render: (item: InventoryItem) => {
         const product = productMap.get(item.product_id);
-        return product?.sku || "—";
+        return <span className="break-words">{product?.sku || "—"}</span>;
       },
     },
     {
       key: "warehouse",
       header: "Almacén",
       sortable: true,
-      render: (item: InventoryItem) =>
-        warehouseMap.get(item.warehouse_id) || `Almacén #${item.warehouse_id}`,
+      className: "max-w-[160px]",
+      render: (item: InventoryItem) => (
+        <span className="break-words">
+          {warehouseMap.get(item.warehouse_id) || `Almacén #${item.warehouse_id}`}
+        </span>
+      ),
     },
     {
       key: "quantity",

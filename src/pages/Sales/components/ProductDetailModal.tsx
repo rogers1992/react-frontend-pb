@@ -9,6 +9,8 @@ interface ProductDetailModalProps {
   category: Category | undefined;
   stockQuantity: number;
   availableStock: number;
+  wholesaleMode: boolean;
+  getActivePrice: (product: Product, isWholesale: boolean) => number;
   onClose: () => void;
   onAddToCart: (product: Product, quantity: number) => void;
 }
@@ -25,15 +27,15 @@ export default function ProductDetailModal({
   category,
   stockQuantity,
   availableStock,
+  wholesaleMode,
+  getActivePrice,
   onClose,
   onAddToCart,
 }: ProductDetailModalProps) {
   if (!product) return null;
 
-  const price =
-    typeof product.unit_price === "string"
-      ? parseFloat(product.unit_price)
-      : product.unit_price;
+  const isWholesale = wholesaleMode && product.wholesale_price != null;
+  const price = getActivePrice(product, isWholesale);
   const { color, label } = getStockBadge(stockQuantity, availableStock);
   const isOutOfStock = availableStock === 0;
 
@@ -86,6 +88,11 @@ export default function ProductDetailModal({
                 <p className="text-3xl font-bold text-brand-500">
                   Bs{price.toFixed(2)}
                 </p>
+                {isWholesale && (
+                  <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
+                    (por mayor)
+                  </p>
+                )}
               </div>
             </div>
 
@@ -138,6 +145,11 @@ export default function ProductDetailModal({
                 <p className="text-4xl font-bold text-brand-500 mt-3">
                   Bs{price.toFixed(2)}
                 </p>
+                {isWholesale && (
+                  <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
+                    (por mayor)
+                  </p>
+                )}
               </div>
 
               {product.description && (
