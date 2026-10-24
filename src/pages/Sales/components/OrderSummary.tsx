@@ -10,6 +10,7 @@ interface CartItem {
   quantity: number;
   discount: number;
   isWholesale: boolean;
+  paymentMethod: string;
 }
 
 interface OrderSummaryProps {
@@ -18,7 +19,7 @@ interface OrderSummaryProps {
   selectedCustomer: Customer | null;
   selectedWarehouse: Warehouse | null;
   warehouses: Warehouse[];
-  paymentMethod: string;
+  defaultPaymentMethod: string;
   submitting: boolean;
   warehouseInventory: Map<number, number>;
   showValidation: boolean;
@@ -29,7 +30,9 @@ interface OrderSummaryProps {
   onSelectWarehouse: (w: Warehouse | null) => void;
   onUpdateCart: (productId: number, quantity: number, discount: number) => void;
   onRemoveFromCart: (productId: number) => void;
-  onPaymentMethodChange: (method: string) => void;
+  onDefaultPaymentMethodChange: (method: string) => void;
+  onItemPaymentMethodChange: (productId: number, method: string) => void;
+  onApplyToAll: () => void;
   onNotesChange: (notes: string) => void;
   onConfirm: () => void;
   onCancel: () => void;
@@ -42,7 +45,7 @@ export default function OrderSummary({
   selectedCustomer,
   selectedWarehouse,
   warehouses,
-  paymentMethod,
+  defaultPaymentMethod,
   submitting,
   warehouseInventory,
   showValidation,
@@ -53,7 +56,9 @@ export default function OrderSummary({
   onSelectWarehouse,
   onUpdateCart,
   onRemoveFromCart,
-  onPaymentMethodChange,
+  onDefaultPaymentMethodChange,
+  onItemPaymentMethodChange,
+  onApplyToAll,
   onNotesChange,
   onConfirm,
   onCancel,
@@ -62,11 +67,31 @@ export default function OrderSummary({
   const totals = useMemo(() => {
     const subtotal = cart.reduce((sum, item) => {
       const price = getActivePrice(item.product, item.isWholesale);
-      return sum + price * item.quantity - (item.discount || 0);
+      return sum + price * item.quantity;
     }, 0);
-    const iva = subtotal * TAX_RATE;
-    return { subtotal, iva, total: subtotal + iva };
+    const totalDiscount = cart.reduce((sum, item) => sum + (item.discount || 0), 0);
+    const afterDiscount = subtotal - totalDiscount;
+    const iva = afterDiscount * TAX_RATE;
+    return { subtotal, totalDiscount, afterDiscount, iva, total: afterDiscount + iva };
   }, [cart, getActivePrice]);
+
+  const paymentGroups = useMemo(() => {
+    const groups = new Map<string, { count: number; total: number }>();
+    cart.forEach((item) => {
+      const price = getActivePrice(item.product, item.isWholesale);
+      const lineTotal = price * item.quantity - (item.discount || 0);
+      const withTax = lineTotal + lineTotal * TAX_RATE;
+      const key = item.paymentMethod || "efectivo";
+      const existing = groups.get(key) || { count: 0, total: 0 };
+      groups.set(key, { count: existing.count + item.quantity, total: existing.total + withTax });
+    });
+    return groups;
+  }, [cart, getActivePrice]);
+
+  const cashWarningVisible = useMemo(() => {
+    if (hasOpenSession) return false;
+    return cart.some((item) => (item.paymentMethod || "efectivo") === "efectivo");
+  }, [cart, hasOpenSession]);
 
   return (
     <div className="sticky top-4 rounded-xl border border-gray-200 bg-white dark:border-white/[0.05] dark:bg-gray-800 p-5 space-y-5">
@@ -172,6 +197,7 @@ export default function OrderSummary({
                 stockQuantity={warehouseInventory.get(item.product.id) ?? 0}
                 onUpdate={(qty, disc) => onUpdateCart(item.product.id, qty, disc)}
                 onRemove={() => onRemoveFromCart(item.product.id)}
+                onPaymentMethodChange={(method) => onItemPaymentMethodChange(item.product.id, method)}
                 getActivePrice={getActivePrice}
               />
             ))}
@@ -179,19 +205,47 @@ export default function OrderSummary({
         )}
       </div>
 
-      {/* Payment method */}
+      {/* Default payment method + Apply to all */}
       <div>
         <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-          Método de pago <span className="text-error-500">*</span>
+          Método de pago (por defecto) <span className="text-error-500">*</span>
         </label>
-        <div className={`rounded-lg border p-1 ${
-          showValidation && !paymentMethod
-            ? "border-error-500 dark:border-error-500"
-            : "border-transparent"
-        }`}>
-          <PaymentMethodSelector value={paymentMethod} onChange={onPaymentMethodChange} />
+        <div className="flex gap-2 items-start">
+          <div className="flex-1">
+            <PaymentMethodSelector
+              value={defaultPaymentMethod}
+              onChange={onDefaultPaymentMethodChange}
+            />
+          </div>
+          <Button
+            size="sm"
+            variant="outline"
+            onClick={onApplyToAll}
+            disabled={cart.length === 0 || submitting}
+            title="Aplicar método a todos los productos del carrito"
+            className="whitespace-nowrap h-11"
+          >
+            Aplicar a todos
+          </Button>
         </div>
       </div>
+
+      {/* Grouped payment summary banner */}
+      {cart.length > 0 && paymentGroups.size > 1 && (
+        <div className="rounded-lg border border-brand-200 bg-brand-50 p-3 dark:border-brand-800 dark:bg-brand-900/20">
+          <p className="text-xs font-semibold text-brand-700 dark:text-brand-400 mb-1">
+            Se crearán {paymentGroups.size} ventas:
+          </p>
+          {Array.from(paymentGroups.entries()).map(([method, group]) => (
+            <div key={method} className="flex justify-between text-xs text-brand-600 dark:text-brand-300">
+              <span>
+                {method === "efectivo" ? "💵 Efectivo" : "↗ Transferencia"} · {group.count} producto{group.count !== 1 ? "s" : ""}
+              </span>
+              <span>Bs {group.total.toFixed(2)}</span>
+            </div>
+          ))}
+        </div>
+      )}
 
       {/* Notes */}
       <div>
@@ -213,20 +267,26 @@ export default function OrderSummary({
       <div className="border-t border-gray-200 dark:border-gray-700 pt-4 space-y-2">
         <div className="flex justify-between text-sm text-gray-500 dark:text-gray-400">
           <span>Subtotal</span>
-          <span>Bs{totals.subtotal.toFixed(2)}</span>
+          <span>Bs {totals.subtotal.toFixed(2)}</span>
         </div>
+        {totals.totalDiscount > 0 && (
+          <div className="flex justify-between text-sm text-gray-500 dark:text-gray-400">
+            <span>Descuento</span>
+            <span>− Bs {totals.totalDiscount.toFixed(2)}</span>
+          </div>
+        )}
         <div className="flex justify-between text-sm text-gray-500 dark:text-gray-400">
           <span>{formatTaxLabel()}</span>
-          <span>Bs{totals.iva.toFixed(2)}</span>
+          <span>Bs {totals.iva.toFixed(2)}</span>
         </div>
         <div className="flex justify-between text-xl font-bold text-gray-800 dark:text-white/90 pt-2 border-t border-gray-200 dark:border-gray-700">
           <span>Total</span>
-          <span>Bs{totals.total.toFixed(2)}</span>
+          <span>Bs {totals.total.toFixed(2)}</span>
         </div>
       </div>
 
       {/* Caja warning for efectivo */}
-      {paymentMethod === "efectivo" && !hasOpenSession && (
+      {cashWarningVisible && (
         <div className="rounded-lg border border-error-200 bg-error-50 p-3 dark:border-error-800 dark:bg-error-900/20">
           <p className="text-sm text-error-700 dark:text-error-400">
             No hay caja abierta para este almacen. Debes abrir caja antes de registrar ventas en efectivo.
@@ -244,7 +304,7 @@ export default function OrderSummary({
           size="sm"
           className="flex-1"
           onClick={onConfirm}
-          disabled={cart.length === 0 || !selectedWarehouse || !paymentMethod || submitting}
+          disabled={cart.length === 0 || !selectedWarehouse || submitting}
         >
           {submitting ? (
             <span className="flex items-center justify-center gap-2">

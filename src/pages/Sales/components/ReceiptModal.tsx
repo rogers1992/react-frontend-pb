@@ -1,3 +1,4 @@
+import { useState } from "react";
 import { Modal } from "../../../components/ui/modal";
 import { CheckCircleIcon, ChatIcon, DownloadIcon } from "../../../icons";
 import { generateReceiptPdf } from "../../../utils/receiptPdf";
@@ -5,7 +6,7 @@ import type { Sale } from "../../../types";
 
 interface ReceiptModalProps {
   isOpen: boolean;
-  sale: Sale | null;
+  sales: Sale[];
   customerName: string;
   sellerName: string;
   onClose: () => void;
@@ -14,13 +15,15 @@ interface ReceiptModalProps {
 
 export default function ReceiptModal({
   isOpen,
-  sale,
+  sales,
   customerName,
   sellerName,
   onClose,
   onNewSale,
 }: ReceiptModalProps) {
-  if (!sale) return null;
+  const [downloading, setDownloading] = useState(false);
+
+  if (!isOpen || sales.length === 0) return null;
 
   const formatDate = (iso: string) => {
     const d = new Date(iso);
@@ -33,8 +36,10 @@ export default function ReceiptModal({
     });
   };
 
-  const total = typeof sale.total_amount === "string" ? parseFloat(sale.total_amount) : sale.total_amount;
-  const totalItems = sale.items.reduce((sum, item) => sum + item.quantity, 0);
+  const getSaleTotal = (sale: Sale) =>
+    typeof sale.total_amount === "string" ? parseFloat(sale.total_amount) : sale.total_amount;
+
+  const grandTotal = sales.reduce((sum, sale) => sum + getSaleTotal(sale), 0);
 
   const paymentLabels: Record<string, string> = {
     efectivo: "Efectivo",
@@ -43,7 +48,24 @@ export default function ReceiptModal({
   };
 
   const handleDownloadPdf = async () => {
-    await generateReceiptPdf(sale, customerName, sellerName);
+    if (sales.length === 0) return;
+    setDownloading(true);
+    try {
+      for (const sale of sales) {
+        const blob = await generateReceiptPdf(sale, customerName, sellerName);
+        const url = URL.createObjectURL(blob);
+        const link = document.createElement("a");
+        link.href = url;
+        link.download = `nota_venta_${sale.id}.pdf`;
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+        URL.revokeObjectURL(url);
+        await new Promise((r) => setTimeout(r, 1000));
+      }
+    } finally {
+      setDownloading(false);
+    }
   };
 
   return (
@@ -56,18 +78,41 @@ export default function ReceiptModal({
 
         {/* Title */}
         <h3 className="text-lg font-semibold text-gray-800 dark:text-white/90 mb-1">
-          Venta registrada
+          {sales.length === 1 ? "Venta registrada" : `${sales.length} Ventas registradas`}
         </h3>
 
         {/* Big total */}
-        <p className="text-3xl font-bold text-gray-900 dark:text-white mb-2">
-          Bs {total.toLocaleString("es-BO", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+        <p className="text-3xl font-bold text-gray-900 dark:text-white mb-1">
+          Bs {grandTotal.toLocaleString("es-BO", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
         </p>
+        {sales.length > 1 && (
+          <p className="text-xs text-gray-400 mb-4">(Total combinado)</p>
+        )}
 
-        {/* Sale info line */}
-        <p className="text-sm text-gray-500 dark:text-gray-400 mb-6">
-          #{sale.id} &middot; {formatDate(sale.sale_date)} &middot; {sale.warehouse_name || "Tienda Principal"}
-        </p>
+        {/* Per-sale cards */}
+        <div className="w-full space-y-2 mb-6">
+          {sales.map((sale) => {
+            const total = getSaleTotal(sale);
+            return (
+              <div
+                key={sale.id}
+                className="w-full rounded-lg border border-gray-200 dark:border-gray-700 p-3 bg-gray-50 dark:bg-gray-800/50"
+              >
+                <div className="flex justify-between items-center mb-1">
+                  <span className="text-sm font-medium text-gray-800 dark:text-white/90">
+                    #{sale.id} — {paymentLabels[sale.payment_method] ?? sale.payment_method}
+                  </span>
+                  <span className="text-sm font-bold text-gray-800 dark:text-white/90">
+                    Bs {total.toLocaleString("es-BO", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                  </span>
+                </div>
+                <p className="text-xs text-gray-400">
+                  {formatDate(sale.sale_date)} &middot; {sale.warehouse_name || "Tienda Principal"} &middot; {sale.items.length} producto{sale.items.length !== 1 ? "s" : ""}
+                </p>
+              </div>
+            );
+          })}
+        </div>
 
         {/* Info grid */}
         <div className="w-full space-y-2 text-sm mb-6">
@@ -78,48 +123,6 @@ export default function ReceiptModal({
           <div className="flex justify-between">
             <span className="text-gray-500 dark:text-gray-400">Vendedor</span>
             <span className="font-medium text-gray-800 dark:text-white/90">{sellerName}</span>
-          </div>
-          <div className="flex justify-between">
-            <span className="text-gray-500 dark:text-gray-400">Pago</span>
-            <span className="font-medium text-gray-800 dark:text-white/90">
-              {paymentLabels[sale.payment_method] ?? sale.payment_method}
-            </span>
-          </div>
-        </div>
-
-        {/* Products section */}
-        <div className="w-full mb-6">
-          <p className="text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wide mb-2">
-            {totalItems} {totalItems === 1 ? "Producto" : "Productos"}
-          </p>
-          <div className="space-y-2">
-            {sale.items.map((item) => {
-              const price = typeof item.unit_price === "string" ? parseFloat(item.unit_price) : item.unit_price;
-              const totalPrice = typeof item.total_price === "string" ? parseFloat(item.total_price) : item.total_price;
-              return (
-                <div
-                  key={item.id}
-                  className="flex items-center gap-3 p-2 rounded-lg bg-gray-50 dark:bg-gray-800/50"
-                >
-                  <div className="flex-shrink-0 w-10 h-10 rounded bg-gray-200 dark:bg-gray-700 flex items-center justify-center">
-                    <svg className="w-5 h-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4" />
-                    </svg>
-                  </div>
-                  <div className="flex-1 min-w-0">
-                    <p className="text-sm font-medium text-gray-800 dark:text-white/90 truncate">
-                      {item.product_name}
-                    </p>
-                    <p className="text-xs text-gray-500 dark:text-gray-400">
-                      {item.quantity} &times; Bs {price.toLocaleString("es-BO", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
-                    </p>
-                  </div>
-                  <p className="text-sm font-semibold text-gray-800 dark:text-white/90 flex-shrink-0">
-                    Bs {totalPrice.toLocaleString("es-BO", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
-                  </p>
-                </div>
-              );
-            })}
           </div>
         </div>
 
@@ -135,10 +138,11 @@ export default function ReceiptModal({
           </button>
           <button
             onClick={handleDownloadPdf}
-            className="flex-1 flex flex-col items-center justify-center gap-1.5 py-3 px-4 rounded-lg border border-gray-200 dark:border-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-800 transition"
+            disabled={downloading}
+            className="flex-1 flex flex-col items-center justify-center gap-1.5 py-3 px-4 rounded-lg border border-gray-200 dark:border-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-800 transition disabled:opacity-50"
           >
             <DownloadIcon className="size-5" />
-            <span className="text-xs font-medium">PDF</span>
+            <span className="text-xs font-medium">{downloading ? "Generando..." : "PDF"}</span>
           </button>
         </div>
 

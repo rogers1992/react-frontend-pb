@@ -7,6 +7,7 @@ interface CartItem {
   quantity: number;
   discount: number;
   isWholesale: boolean;
+  paymentMethod: string;
 }
 
 interface CartItemRowProps {
@@ -14,6 +15,7 @@ interface CartItemRowProps {
   stockQuantity: number;
   onUpdate: (quantity: number, discount: number) => void;
   onRemove: () => void;
+  onPaymentMethodChange: (method: string) => void;
   getActivePrice: (product: Product, isWholesale: boolean) => number;
 }
 
@@ -22,6 +24,7 @@ export default function CartItemRow({
   stockQuantity,
   onUpdate,
   onRemove,
+  onPaymentMethodChange,
   getActivePrice,
 }: CartItemRowProps) {
   const url = resolveImageUrl(item.product.image_url);
@@ -123,6 +126,46 @@ export default function CartItemRow({
             min="0"
             className="w-16 h-7 rounded-md border border-gray-300 px-2 text-xs text-right dark:bg-gray-800 dark:border-gray-600 dark:text-white/90 focus:border-brand-300 focus:outline-hidden focus:ring-2 focus:ring-brand-500/20"
           />
+        </div>
+      </div>
+
+      {/* Payment method selector */}
+      <div className="flex items-center gap-2 pl-[52px]">
+        <span className="text-xs text-gray-500 dark:text-gray-400">Método:</span>
+        <div className="flex gap-1">
+          <button
+            type="button"
+            onClick={() => onPaymentMethodChange("efectivo")}
+            className={`flex items-center gap-1 rounded px-2 py-1 text-xs font-medium transition cursor-pointer ${
+              item.paymentMethod === "efectivo"
+                ? "bg-brand-500 text-white"
+                : "bg-gray-100 text-gray-600 hover:bg-gray-200 dark:bg-gray-700 dark:text-gray-400"
+            }`}
+          >
+            <svg className="size-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+              <rect x="2" y="6" width="20" height="12" rx="2" />
+              <circle cx="12" cy="12" r="3" />
+              <path d="M6 12h.01M18 12h.01" />
+            </svg>
+            Efectivo
+          </button>
+          <button
+            type="button"
+            onClick={() => onPaymentMethodChange("transferencia")}
+            className={`flex items-center gap-1 rounded px-2 py-1 text-xs font-medium transition cursor-pointer ${
+              item.paymentMethod === "transferencia"
+                ? "bg-brand-500 text-white"
+                : "bg-gray-100 text-gray-600 hover:bg-gray-200 dark:bg-gray-700 dark:text-gray-400"
+            }`}
+          >
+            <svg className="size-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+              <path d="M16 3h5v5" />
+              <path d="M8 3H3v5" />
+              <path d="M12 22v-8.3a4 4 0 0 0-1.172-2.872L3 3" />
+              <path d="m15 9 6-6" />
+            </svg>
+            Transferencia
+          </button>
         </div>
       </div>
     </div>

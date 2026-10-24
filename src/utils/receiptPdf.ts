@@ -119,7 +119,7 @@ export async function generateReceiptPdf(
   sale: Sale,
   customerName: string,
   sellerName: string,
-): Promise<void> {
+): Promise<Blob> {
   const pdfWidth = 80;
   const pdfHeight = calculateReceiptHeight(sale);
   const pdf = new jsPDF({
@@ -397,5 +397,5 @@ export async function generateReceiptPdf(
     },
   );
 
-  pdf.save(`nota_venta_${sale.id}.pdf`);
+  return pdf.output('blob');
 }

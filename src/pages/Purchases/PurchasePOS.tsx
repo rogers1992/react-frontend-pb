@@ -9,6 +9,7 @@ import { supplierService } from "../../services/supplier.service";
 import { warehouseService } from "../../services/warehouse.service";
 import { purchaseService } from "../../services/purchase.service";
 import { getErrorMessage } from "../../utils/error";
+import { addToHistory } from "../../utils/searchHistory";
 import type { Product, Category, Supplier, Warehouse, OrderCreate } from "../../types";
 import PurchaseProductGrid from "./components/PurchaseProductGrid";
 import PurchaseCartSummary from "./components/PurchaseCartSummary";
@@ -167,6 +168,9 @@ export default function PurchasePOS() {
         })),
       };
       await purchaseService.create(orderData);
+
+      cart.forEach((item) => addToHistory(item.product.name));
+
       showToast({
         type: "success",
         message: "Orden de compra registrada. Estado: Pendiente.",

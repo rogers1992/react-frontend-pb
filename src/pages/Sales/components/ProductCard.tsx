@@ -104,7 +104,7 @@ export default function ProductCard({
 
         {wholesaleMode && wholesalePrice != null ? (
           <div className="bg-gray-100 dark:bg-gray-700/50 rounded-lg p-2 mt-1">
-            <div className="flex items-center justify-between gap-1">
+            <div className="sm:flex sm:items-center sm:justify-between gap-1">
               <div>
                 <p className="text-gray-800 dark:text-white/90 font-semibold text-lg">
                   Bs{wholesalePrice.toFixed(2)}
@@ -119,14 +119,14 @@ export default function ProductCard({
                   onAdd();
                 }}
                 disabled={isDisabled}
-                className="flex items-center justify-center bg-brand-500 text-white rounded-lg px-3 py-1.5 text-xs font-medium hover:bg-brand-600 disabled:opacity-50 disabled:cursor-not-allowed transition"
+                className="mt-1 sm:mt-0 w-full sm:w-auto flex items-center justify-center bg-brand-500 text-white rounded-lg px-3 py-1.5 text-xs font-medium hover:bg-brand-600 disabled:opacity-50 disabled:cursor-not-allowed transition"
               >
                 Agregar
               </button>
             </div>
           </div>
         ) : (
-          <div className="flex items-center justify-between gap-2 pt-1">
+          <div className="sm:flex sm:items-center sm:justify-between gap-2 pt-1">
             <p className="text-brand-500 font-semibold text-lg">
               Bs{price.toFixed(2)}
             </p>
@@ -136,7 +136,7 @@ export default function ProductCard({
                 onAdd();
               }}
               disabled={isDisabled}
-              className="flex items-center justify-center bg-brand-500 text-white rounded-lg px-3 py-1.5 text-xs font-medium hover:bg-brand-600 disabled:opacity-50 disabled:cursor-not-allowed transition"
+              className="mt-1 sm:mt-0 w-full sm:w-auto flex items-center justify-center bg-brand-500 text-white rounded-lg px-3 py-1.5 text-xs font-medium hover:bg-brand-600 disabled:opacity-50 disabled:cursor-not-allowed transition"
             >
               Agregar
             </button>

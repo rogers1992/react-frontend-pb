@@ -12,6 +12,7 @@ import { inventoryService } from "../../services/inventory.service";
 import { salesService } from "../../services/sales.service";
 import { cajaService } from "../../services/caja.service";
 import { getErrorMessage } from "../../utils/error";
+import { addToHistory } from "../../utils/searchHistory";
 import type { Product, Category, Customer, Warehouse, Sale, SaleCreate } from "../../types";
 import { TAX_RATE } from "../../utils/tax";
 import ProductGrid from "./components/ProductGrid";
@@ -26,6 +27,7 @@ interface CartItem {
   quantity: number;
   discount: number;
   isWholesale: boolean;
+  paymentMethod: string;
 }
 
 export default function SalesIndex() {
@@ -40,18 +42,19 @@ export default function SalesIndex() {
   const [cart, setCart] = useState<CartItem[]>([]);
   const [selectedCustomer, setSelectedCustomer] = useState<Customer | null>(null);
   const [selectedWarehouse, setSelectedWarehouse] = useState<Warehouse | null>(null);
-  const [paymentMethod, setPaymentMethod] = useState("");
+  const [paymentMethod, setPaymentMethod] = useState("efectivo");
   const [notes, setNotes] = useState("");
   const [warehouseInventory, setWarehouseInventory] = useState<Map<number, number>>(new Map());
   const [showReview, setShowReview] = useState(false);
   const [showValidation, setShowValidation] = useState(false);
   const [showReceipt, setShowReceipt] = useState(false);
-  const [lastSale, setLastSale] = useState<Sale | null>(null);
+  const [lastSales, setLastSales] = useState<Sale[]>([]);
   const [submitting, setSubmitting] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedCategory, setSelectedCategory] = useState<number | "all">("all");
-  const [selectedProduct, setSelectedProduct] = useState<Product | null>(null);
-  const [showProductDetail, setShowProductDetail] = useState(false);
+  const [sortBy, setSortBy] = useState<"name-asc" | "name-desc" | "price-asc" | "price-desc" | "stock">("name-asc");
+  const [hideOutOfStock, setHideOutOfStock] = useState(false);
+  const [selectedProduct, setSelectedProduct] = useState<Product | null>(null);  const [showProductDetail, setShowProductDetail] = useState(false);
   const [hasOpenSession, setHasOpenSession] = useState(true);
 
   const abortRef = useRef<AbortController | null>(null);
@@ -149,7 +152,7 @@ export default function SalesIndex() {
     if (prevWarehouseIdRef.current !== null && prevWarehouseIdRef.current !== selectedWarehouse?.id) {
       setCart([]);
       setSelectedCustomer(null);
-      setPaymentMethod("");
+      setPaymentMethod("efectivo");
       setNotes("");
       setShowValidation(false);
     }
@@ -165,9 +168,9 @@ export default function SalesIndex() {
         );
       }
       const isWholesale = !!selectedWarehouse?.is_wholesale && product.wholesale_price != null;
-      return [...prev, { product, quantity, discount: 0, isWholesale }];
+      return [...prev, { product, quantity, discount: 0, isWholesale, paymentMethod: paymentMethod || "efectivo" }];
     });
-  }, [selectedWarehouse]);
+  }, [selectedWarehouse, paymentMethod]);
 
   const handleProductClick = useCallback((product: Product) => {
     setSelectedProduct(product);
@@ -198,12 +201,23 @@ export default function SalesIndex() {
     setCart((prev) => prev.filter((i) => i.product.id !== productId));
   }, []);
 
+  const setItemPaymentMethod = useCallback((productId: number, method: string) => {
+    setCart((prev) =>
+      prev.map((i) => (i.product.id === productId ? { ...i, paymentMethod: method } : i))
+    );
+  }, []);
+
   const clearCart = useCallback(() => {
     setCart([]);
-    setPaymentMethod("");
+    setPaymentMethod("efectivo");
     setNotes("");
     setShowValidation(false);
   }, []);
+
+  const applyPaymentMethodToAll = useCallback(() => {
+    const method = paymentMethod || "efectivo";
+    setCart((prev) => prev.map((i) => ({ ...i, paymentMethod: method })));
+  }, [paymentMethod]);
 
   const openReview = useCallback(() => {
     if (cart.length === 0) return;
@@ -212,12 +226,8 @@ export default function SalesIndex() {
       showToast({ type: "error", message: "Selecciona un almacén." });
       return;
     }
-    if (!paymentMethod) {
-      showToast({ type: "error", message: "Selecciona un método de pago." });
-      return;
-    }
     setShowReview(true);
-  }, [cart.length, selectedWarehouse, paymentMethod, showToast]);
+  }, [cart.length, selectedWarehouse, showToast]);
 
   const confirmSale = useCallback(async () => {
     setShowReview(false);
@@ -225,32 +235,53 @@ export default function SalesIndex() {
       showToast({ type: "error", message: "Selecciona un almacen antes de confirmar la venta." });
       return;
     }
-    if (paymentMethod === "efectivo" && !hasOpenSession) {
+    const hasEfectivo = cart.some((item) => (item.paymentMethod || "efectivo") === "efectivo");
+    if (hasEfectivo && !hasOpenSession) {
       showToast({ type: "error", message: "Debes abrir caja antes de registrar ventas en efectivo." });
       return;
     }
     try {
       setSubmitting(true);
-      const saleData: SaleCreate = {
-        customer_id: selectedCustomer?.id ?? 1,
-        warehouse_id: selectedWarehouse.id,
-        payment_method: paymentMethod,
-        notes: notes || undefined,
-        items: cart.map((item) => {
-          const price = getActivePrice(item.product, item.isWholesale);
-          return {
-            product_id: item.product.id,
-            quantity: item.quantity,
-            unit_price: price,
-            discount: item.discount || 0,
-            is_wholesale: item.isWholesale,
-          };
-        }),
-      };
-      const sale = await salesService.create(saleData);
-      setLastSale(sale);
+
+      const groups = new Map<string, CartItem[]>();
+      cart.forEach((item) => {
+        const key = item.paymentMethod || "efectivo";
+        if (!groups.has(key)) groups.set(key, []);
+        groups.get(key)!.push(item);
+      });
+
+      const createdSales: Sale[] = [];
+      for (const [method, items] of groups) {
+        const saleData: SaleCreate = {
+          customer_id: selectedCustomer?.id ?? 1,
+          warehouse_id: selectedWarehouse.id,
+          payment_method: method,
+          notes: notes || undefined,
+          items: items.map((item) => {
+            const price = getActivePrice(item.product, item.isWholesale);
+            return {
+              product_id: item.product.id,
+              quantity: item.quantity,
+              unit_price: price,
+              discount: item.discount || 0,
+              is_wholesale: item.isWholesale,
+            };
+          }),
+        };
+        const sale = await salesService.create(saleData);
+        createdSales.push(sale);
+      }
+
+      setLastSales(createdSales);
       setShowReceipt(true);
-      showToast({ type: "success", message: "Venta registrada exitosamente." });
+
+      cart.forEach((item) => addToHistory(item.product.name));
+
+      const count = createdSales.length;
+      showToast({
+        type: "success",
+        message: `${count} venta${count > 1 ? "s" : ""} registrada${count > 1 ? "s" : ""} exitosamente.`,
+      });
       fetchInventory();
     } catch (error) {
       const message = getErrorMessage(error, "Error al registrar la venta.");
@@ -258,11 +289,11 @@ export default function SalesIndex() {
     } finally {
       setSubmitting(false);
     }
-  }, [cart, selectedCustomer, selectedWarehouse, paymentMethod, notes, showToast, hasOpenSession, fetchInventory, getActivePrice]);
+  }, [cart, selectedCustomer, selectedWarehouse, notes, showToast, hasOpenSession, fetchInventory, getActivePrice]);
 
   const handleNewSale = useCallback(() => {
     setShowReceipt(false);
-    setLastSale(null);
+    setLastSales([]);
     clearCart();
   }, [clearCart]);
 
@@ -315,6 +346,10 @@ export default function SalesIndex() {
             onProductClick={handleProductClick}
             cart={cart}
             wholesaleMode={selectedWarehouse?.is_wholesale ?? false}
+            sortBy={sortBy}
+            onSortChange={(sort) => setSortBy(sort as "name-asc" | "name-desc" | "price-asc" | "price-desc" | "stock")}
+            hideOutOfStock={hideOutOfStock}
+            onHideOutOfStockChange={setHideOutOfStock}
           />
         </div>
         <div className="xl:col-span-1">
@@ -328,7 +363,10 @@ export default function SalesIndex() {
               selectedCustomer={selectedCustomer}
               selectedWarehouse={selectedWarehouse}
               warehouses={warehouses}
-              paymentMethod={paymentMethod}
+              defaultPaymentMethod={paymentMethod}
+              onDefaultPaymentMethodChange={setPaymentMethod}
+              onItemPaymentMethodChange={setItemPaymentMethod}
+              onApplyToAll={applyPaymentMethodToAll}
               submitting={submitting}
               warehouseInventory={warehouseInventory}
               showValidation={showValidation}
@@ -339,7 +377,6 @@ export default function SalesIndex() {
               onSelectWarehouse={setSelectedWarehouse}
               onUpdateCart={updateCartItem}
               onRemoveFromCart={removeFromCart}
-              onPaymentMethodChange={setPaymentMethod}
               onNotesChange={setNotes}
               onConfirm={openReview}
               onCancel={handleCancel}
@@ -354,7 +391,6 @@ export default function SalesIndex() {
         cart={cart}
         selectedCustomer={selectedCustomer}
         selectedWarehouse={selectedWarehouse}
-        paymentMethod={paymentMethod}
         notes={notes}
         getActivePrice={getActivePrice}
         onConfirm={confirmSale}
@@ -363,7 +399,7 @@ export default function SalesIndex() {
 
       <ReceiptModal
         isOpen={showReceipt}
-        sale={lastSale}
+        sales={lastSales}
         customerName={customerName}
         sellerName={user ? `${user.first_name} ${user.last_name}` : "Sistema"}
         onClose={() => setShowReceipt(false)}
