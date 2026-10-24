@@ -222,7 +222,6 @@ export default function OrderSummary({
             variant="outline"
             onClick={onApplyToAll}
             disabled={cart.length === 0 || submitting}
-            title="Aplicar método a todos los productos del carrito"
             className="whitespace-nowrap h-11"
           >
             Aplicar a todos
